@@ -20,6 +20,10 @@ public protocol XLoginViewDelegate: AnyObject {
     func loginViewDidTapLoginButton(_ loginView: XLoginView)
 }
 
+/**
+ * Our XLoginView that can be displayed and hosted in any VC or view tree.
+ * Displays a X logo icon, subheader text, and a simple login button.
+ */
 public class XLoginView : UIView {
     
     private var xLogoImageView: UIImageView

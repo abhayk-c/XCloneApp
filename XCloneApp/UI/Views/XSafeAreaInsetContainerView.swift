@@ -7,6 +7,10 @@
 
 import UIKit
 
+/**
+ * A helpful container view for laying out view's safely
+ * and respecting the iPhone's window safe area insets.
+ */
 public class XSafeAreaInsetContainerView : UIView {
     
     private var childView: UIView
