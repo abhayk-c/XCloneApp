@@ -8,6 +8,10 @@
 import UIKit
 import SafariServices
 
+/**
+ * XLoginViewController is the login vc for our XClone Application.
+ * Use this VC to display our login UI to authenticate a user.
+ */
 public class XLoginViewController : UIViewController, XLoginViewDelegate, SFSafariViewControllerDelegate {
     
     private let viewModel: XLoginViewModel
