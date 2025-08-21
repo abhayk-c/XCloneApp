@@ -12,7 +12,7 @@ private struct XAuthURLConstants {
     static let redirectURI = "xcloneapp://"
     static let clientID = "WlNIR1ZoUWE3OTh3NElJMWM3Q2o6MTpjaQ"
     static let responseTypeValue = "code"
-    
+
     static let responseTypeKey = "response_type"
     static let clientIDKey = "client_id"
     static let redirectURIKey = "redirect_uri"
@@ -23,12 +23,12 @@ private struct XAuthURLConstants {
 }
 
 public struct XAuthorizationURLBuilder {
-    
+
     public var apiScopes: XAPIScopes = []
     public var state: String = ""
     public var codeChallenge: String = ""
     public var codeChallengeMethod: XPKCECodeChallengeMethod = .plain
-    
+
     public func buildURL() -> URL? {
         var urlComponents = URLComponents(string: XAuthURLConstants.authorizationURI)
         var urlQueryItems: [URLQueryItem] = []
@@ -42,5 +42,5 @@ public struct XAuthorizationURLBuilder {
         urlComponents?.queryItems = urlQueryItems
         return urlComponents?.url
     }
-    
+
 }

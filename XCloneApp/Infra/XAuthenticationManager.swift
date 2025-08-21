@@ -9,14 +9,14 @@ import UIKit
 import AuthenticationServices
 
 private enum XAuthenticationState {
-    case None
-    case AuthorizingUser
-    case FetchingAccessAndRefreshTokens
-    case AuthenticationSuccess
-    case AuthenticationFailed
+    case none
+    case authorizingUser
+    case fetchingAccessAndRefreshTokens
+    case authenticationSuccess
+    case authenticationFailed
 }
 
-public protocol XAuthenticationManagerDelegate : AnyObject {
+public protocol XAuthenticationManagerDelegate: AnyObject {
     func presentationWindowForAuthSession() -> UIWindow?
 }
 
@@ -24,56 +24,56 @@ private struct XAuthenticationManagerConstants {
     static let urlScheme = "xcloneapp"
 }
 
-public class XAuthenticationManager : NSObject, ASWebAuthenticationPresentationContextProviding {
-    
-    public weak var delegate: XAuthenticationManagerDelegate? = nil
-    
-    private var authenticationState: XAuthenticationState = .None
-    private var authenticationSession: ASWebAuthenticationSession? = nil
+public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationContextProviding {
+
+    public weak var delegate: XAuthenticationManagerDelegate?
+
+    private var authenticationState: XAuthenticationState = .none
+    private var authenticationSession: ASWebAuthenticationSession?
     private var csrf = XCSRFState()
     private var pkce = XPKCECodeChallenge(.plain)
     private var authorizationCode = ""
     private static let kURLScheme = "xcloneapp"
-    
+
     public func authenticate() {
         csrf = XCSRFState()
         pkce = XPKCECodeChallenge(.s256)
         authorizationCode = ""
-        updateState(.None) //always reset
-        updateState(.AuthorizingUser)
+        updateState(.none) // always reset
+        updateState(.authorizingUser)
     }
-    
+
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         return delegate?.presentationWindowForAuthSession() ?? UIWindow()
     }
-    
+
     private func updateState(_ newState: XAuthenticationState) {
         switch newState {
-        case .None:
+        case .none:
             authenticationState = newState
-        case .AuthorizingUser:
-            if authenticationState == .None {
+        case .authorizingUser:
+            if authenticationState == .none {
                 authenticationState = newState
                 handleAuthorizingUser()
             }
-        case .FetchingAccessAndRefreshTokens:
-            if authenticationState == .AuthorizingUser {
+        case .fetchingAccessAndRefreshTokens:
+            if authenticationState == .authorizingUser {
                 authenticationState = newState
                 handleFetchingAccessAndRefreshTokens()
             }
-        case .AuthenticationSuccess:
-            if authenticationState == .FetchingAccessAndRefreshTokens {
+        case .authenticationSuccess:
+            if authenticationState == .fetchingAccessAndRefreshTokens {
                 authenticationState = newState
                 handleAuthenticationSuccessOrFailure()
             }
-        case .AuthenticationFailed:
-            if authenticationState != .None && authenticationState != .AuthenticationSuccess {
+        case .authenticationFailed:
+            if authenticationState != .none && authenticationState != .authenticationSuccess {
                 authenticationState = newState
                 handleAuthenticationSuccessOrFailure()
             }
         }
     }
-    
+
     private func handleAuthorizingUser() {
         var authUriBuilder = XAuthorizationURLBuilder()
         authUriBuilder.apiScopes = .readTimelineWithOfflineAccess
@@ -84,35 +84,35 @@ public class XAuthenticationManager : NSObject, ASWebAuthenticationPresentationC
             authenticationSession = ASWebAuthenticationSession(url: authUri,
                                                                callbackURLScheme: XAuthenticationManagerConstants.urlScheme,
                                                                completionHandler: { [weak self] (callbackURL, error) in
-                if let strongSelf = self {
-                    if let callbackURI = callbackURL, error == nil {
-                        if let urlComponents = URLComponents(string: callbackURI.absoluteString) {
-                            let stateQueryParam = urlComponents.queryItems?.first(where: { $0.name == "state" })
-                            let authCodeQueryParam = urlComponents.queryItems?.first(where: { $0.name == "code" })
-                            if let state = stateQueryParam?.value, let authCode = authCodeQueryParam?.value {
-                                if state == strongSelf.csrf.state {
-                                    strongSelf.authorizationCode = authCode
-                                    strongSelf.updateState(.FetchingAccessAndRefreshTokens)
-                                }
-                            }
-                        }
-                    } else {
-                        
-                    }
-                }
-            })
+                                                                if let strongSelf = self {
+                                                                    if let callbackURI = callbackURL, error == nil {
+                                                                        if let urlComponents = URLComponents(string: callbackURI.absoluteString) {
+                                                                            let stateQueryParam = urlComponents.queryItems?.first(where: { $0.name == "state" })
+                                                                            let authCodeQueryParam = urlComponents.queryItems?.first(where: { $0.name == "code" })
+                                                                            if let state = stateQueryParam?.value, let authCode = authCodeQueryParam?.value {
+                                                                                if state == strongSelf.csrf.state {
+                                                                                    strongSelf.authorizationCode = authCode
+                                                                                    strongSelf.updateState(.fetchingAccessAndRefreshTokens)
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    } else {
+
+                                                                    }
+                                                                }
+                                                               })
             authenticationSession?.presentationContextProvider = self
             authenticationSession?.start()
         }
     }
-    
+
     private func handleFetchingAccessAndRefreshTokens() {
         print("Beginning Access Token fetch")
         print("Authorization Code: \(authorizationCode)")
     }
-    
+
     private func handleAuthenticationSuccessOrFailure() {
-        
+
     }
-    
+
 }

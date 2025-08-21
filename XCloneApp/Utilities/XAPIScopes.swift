@@ -5,14 +5,14 @@
 //  Created by Abhay Curam on 8/20/25.
 //
 
-public struct XAPIScopes : OptionSet {
-    
+public struct XAPIScopes: OptionSet {
+
     public let rawValue: Int
 
     public init(rawValue: Int) {
         self.rawValue = rawValue
     }
-    
+
     public static let tweetRead = XAPIScopes(rawValue: 1 << 0)
     public static let tweetWrite = XAPIScopes(rawValue: 1 << 1)
     public static let tweetModerateWrite = XAPIScopes(rawValue: 1 << 2)
@@ -33,10 +33,10 @@ public struct XAPIScopes : OptionSet {
     public static let bookmarkRead = XAPIScopes(rawValue: 1 << 17)
     public static let bookmarkWrite = XAPIScopes(rawValue: 1 << 18)
     public static let mediaWrite = XAPIScopes(rawValue: 1 << 19)
-    
+
     public static let readTimeline: XAPIScopes = [.tweetRead, .usersRead]
     public static let readTimelineWithOfflineAccess: XAPIScopes = [.tweetRead, .usersRead, .offlineAccess]
-    
+
     public func toString() -> String {
         var scopeString = ""
         if self.contains(.tweetRead) { scopeString.append("tweet.read ") }
@@ -62,7 +62,5 @@ public struct XAPIScopes : OptionSet {
         if !scopeString.isEmpty { scopeString.removeLast() }
         return scopeString
     }
-    
+
 }
-
-
