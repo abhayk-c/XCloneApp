@@ -1,0 +1,9 @@
+included:
+  - XCloneApp
+  - XCloneAppTests
+  - XCloneAppUITests
+
+excluded:
+  - Pods
+  - Carthage
+  - DerivedData

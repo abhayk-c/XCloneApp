@@ -9,11 +9,11 @@ import Foundation
 import CryptoKit
 
 public struct XPKCECodeChallenge {
-    
+
     public let codeVerifier: String
     public let codeChallenge: String
     public let challengeMethod: XPKCECodeChallengeMethod
-    
+
     public init(_ challengeMethod: XPKCECodeChallengeMethod) {
         self.challengeMethod = challengeMethod
         var str = ""
@@ -30,5 +30,5 @@ public struct XPKCECodeChallenge {
             self.codeChallenge = Data(hash).base64EncodedString()
         }
     }
-    
+
 }
