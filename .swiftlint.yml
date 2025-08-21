@@ -7,3 +7,6 @@ excluded:
   - Pods
   - Carthage
   - DerivedData
+
+disabled_rules:
+  - line_length
