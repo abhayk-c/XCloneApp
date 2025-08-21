@@ -24,17 +24,10 @@ private struct XAuthURLConstants {
 
 public struct XAuthorizationURLBuilder {
     
-    public var apiScopes: XAPIScopes
-    public var state: String
-    public var codeChallenge: String
-    public var codeChallengeMethod: XPKCECodeChallengeMethod
-    
-    public init() {
-        self.apiScopes = []
-        self.state = ""
-        self.codeChallenge = ""
-        self.codeChallengeMethod = .plain
-    }
+    public var apiScopes: XAPIScopes = []
+    public var state: String = ""
+    public var codeChallenge: String = ""
+    public var codeChallengeMethod: XPKCECodeChallengeMethod = .plain
     
     public func buildURL() -> URL? {
         var urlComponents = URLComponents(string: XAuthURLConstants.authorizationURI)

@@ -12,7 +12,7 @@ public struct XCSRFState {
     public init() {
         let randSeed = Int.random(in: 1...13)
         var str = ""
-        for i in 0..<randSeed {
+        for _ in 0..<randSeed {
             str.append(UUID().uuidString)
         }
         self.state = str

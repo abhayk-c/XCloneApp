@@ -28,21 +28,12 @@ public class XAuthenticationManager : NSObject, ASWebAuthenticationPresentationC
     
     public weak var delegate: XAuthenticationManagerDelegate? = nil
     
-    private var authenticationState: XAuthenticationState
-    private var authenticationSession: ASWebAuthenticationSession?
-    private var csrf: XCSRFState
-    private var pkce: XPKCECodeChallenge
-    private var authorizationCode: String
-    
+    private var authenticationState: XAuthenticationState = .None
+    private var authenticationSession: ASWebAuthenticationSession? = nil
+    private var csrf = XCSRFState()
+    private var pkce = XPKCECodeChallenge(.plain)
+    private var authorizationCode = ""
     private static let kURLScheme = "xcloneapp"
-    
-    public override init() {
-        self.authenticationState = .None
-        self.authenticationSession = nil
-        self.csrf = XCSRFState()
-        self.pkce = XPKCECodeChallenge(.plain)
-        self.authorizationCode = ""
-    }
     
     public func authenticate() {
         csrf = XCSRFState()

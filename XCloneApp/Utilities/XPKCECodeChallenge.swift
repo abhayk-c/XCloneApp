@@ -18,7 +18,7 @@ public struct XPKCECodeChallenge {
         self.challengeMethod = challengeMethod
         var str = ""
         let randSeed = Int.random(in: 2...3)
-        for i in 0..<randSeed {
+        for _ in 0..<randSeed {
             str.append(UUID().uuidString)
         }
         self.codeVerifier = str

@@ -15,13 +15,16 @@ import SafariServices
 public class XLoginViewController : UIViewController, XLoginViewDelegate, XAuthenticationManagerDelegate {
     
     private let viewModel: XLoginViewModel
-    private let authenticationManager: XAuthenticationManager
+    
+    private lazy var authenticationManager: XAuthenticationManager = {
+        let authManager = XAuthenticationManager()
+        authManager.delegate = self
+        return authManager
+    }()
     
     public init(viewModel: XLoginViewModel) {
         self.viewModel = viewModel
-        self.authenticationManager = XAuthenticationManager()
         super.init(nibName: nil, bundle: nil)
-        self.authenticationManager.delegate = self
     }
     
     required init?(coder: NSCoder) {
