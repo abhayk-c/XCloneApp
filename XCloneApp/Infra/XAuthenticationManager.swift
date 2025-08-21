@@ -9,11 +9,11 @@ import UIKit
 import AuthenticationServices
 
 private enum XAuthenticationState {
-    case None
-    case AuthorizingUser
-    case FetchingAccessAndRefreshTokens
-    case AuthenticationSuccess
-    case AuthenticationFailed
+    case none
+    case authorizingUser
+    case fetchingAccessAndRefreshTokens
+    case authenticationSuccess
+    case authenticationFailed
 }
 
 public protocol XAuthenticationManagerDelegate: AnyObject {
@@ -28,7 +28,7 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
 
     public weak var delegate: XAuthenticationManagerDelegate?
 
-    private var authenticationState: XAuthenticationState = .None
+    private var authenticationState: XAuthenticationState = .none
     private var authenticationSession: ASWebAuthenticationSession?
     private var csrf = XCSRFState()
     private var pkce = XPKCECodeChallenge(.plain)
@@ -39,8 +39,8 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
         csrf = XCSRFState()
         pkce = XPKCECodeChallenge(.s256)
         authorizationCode = ""
-        updateState(.None) // always reset
-        updateState(.AuthorizingUser)
+        updateState(.none) // always reset
+        updateState(.authorizingUser)
     }
 
     public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
@@ -49,25 +49,25 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
 
     private func updateState(_ newState: XAuthenticationState) {
         switch newState {
-        case .None:
+        case .none:
             authenticationState = newState
-        case .AuthorizingUser:
-            if authenticationState == .None {
+        case .authorizingUser:
+            if authenticationState == .none {
                 authenticationState = newState
                 handleAuthorizingUser()
             }
-        case .FetchingAccessAndRefreshTokens:
-            if authenticationState == .AuthorizingUser {
+        case .fetchingAccessAndRefreshTokens:
+            if authenticationState == .authorizingUser {
                 authenticationState = newState
                 handleFetchingAccessAndRefreshTokens()
             }
-        case .AuthenticationSuccess:
-            if authenticationState == .FetchingAccessAndRefreshTokens {
+        case .authenticationSuccess:
+            if authenticationState == .fetchingAccessAndRefreshTokens {
                 authenticationState = newState
                 handleAuthenticationSuccessOrFailure()
             }
-        case .AuthenticationFailed:
-            if authenticationState != .None && authenticationState != .AuthenticationSuccess {
+        case .authenticationFailed:
+            if authenticationState != .none && authenticationState != .authenticationSuccess {
                 authenticationState = newState
                 handleAuthenticationSuccessOrFailure()
             }
@@ -92,7 +92,7 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
                                                                             if let state = stateQueryParam?.value, let authCode = authCodeQueryParam?.value {
                                                                                 if state == strongSelf.csrf.state {
                                                                                     strongSelf.authorizationCode = authCode
-                                                                                    strongSelf.updateState(.FetchingAccessAndRefreshTokens)
+                                                                                    strongSelf.updateState(.fetchingAccessAndRefreshTokens)
                                                                                 }
                                                                             }
                                                                         }

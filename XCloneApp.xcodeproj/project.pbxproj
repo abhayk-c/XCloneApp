@@ -248,6 +248,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		B5284BDA2E57BE62006BD939 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -261,7 +262,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\ncd \"$SRCROOT\"\necho \">>> SwiftLint Debug <<<\"\necho \"SRCROOT is: $SRCROOT\"\nls -1 \"$SRCROOT\" | head -20\necho \">>> End Debug <<<\"\n\nif [[ \"$(uname -m)\" == arm64 ]]\nthen\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif command -v swiftlint >/dev/null 2>&1\nthen\n    swiftlint\nelse\n    echo \"warning: `swiftlint` command not found...\"\nfi\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\nif [[ \"$(uname -m)\" == arm64 ]]\nthen\n    export PATH=\"/opt/homebrew/bin:$PATH\"\nfi\n\nif command -v swiftlint >/dev/null 2>&1\nthen\n    swiftlint\nelse\n    echo \"warning: `swiftlint` command not found...\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
