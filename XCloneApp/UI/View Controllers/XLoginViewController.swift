@@ -12,16 +12,16 @@ import SafariServices
  * XLoginViewController is the login vc for our XClone Application.
  * Use this VC to display our login UI to authenticate a user.
  */
-public class XLoginViewController : UIViewController, XLoginViewDelegate, SFSafariViewControllerDelegate {
+public class XLoginViewController : UIViewController, XLoginViewDelegate, XAuthenticationManagerDelegate {
     
     private let viewModel: XLoginViewModel
-    private let loginURI: URL?
+    private let authenticationManager: XAuthenticationManager
     
-    public init(viewModel: XLoginViewModel,
-                loginURI: URL?) {
+    public init(viewModel: XLoginViewModel) {
         self.viewModel = viewModel
-        self.loginURI = loginURI
+        self.authenticationManager = XAuthenticationManager()
         super.init(nibName: nil, bundle: nil)
+        self.authenticationManager.delegate = self
     }
     
     required init?(coder: NSCoder) {
@@ -36,15 +36,11 @@ public class XLoginViewController : UIViewController, XLoginViewDelegate, SFSafa
     }
     
     public func loginViewDidTapLoginButton(_ loginView: XLoginView) {
-        guard let uri = self.loginURI else { return }
-        let safariViewController = SFSafariViewController(url: uri)
-        safariViewController.modalPresentationStyle = .overFullScreen
-        safariViewController.delegate = self
-        present(safariViewController, animated: true)
+        authenticationManager.authenticate()
     }
     
-    public func safariViewControllerDidFinish(_ controller: SFSafariViewController) {
-        print("Safari browser dismissed")
+    public func presentationWindowForAuthSession() -> UIWindow? {
+        return UIApplication.shared.currentSceneDelegateWindow
     }
     
 }

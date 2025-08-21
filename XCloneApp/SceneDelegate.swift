@@ -19,8 +19,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let window = UIWindow(windowScene: windowScene)
         let loginViewModel = XLoginViewModel(subHeaderText: "See what's happening in the world right now.", loginButtonText: "Log in")
-        let loginURI = URL(string: "https://www.google.com")
-        let loginViewController = XLoginViewController(viewModel: loginViewModel, loginURI: loginURI)
+        let loginViewController = XLoginViewController(viewModel: loginViewModel)
         window.rootViewController = loginViewController
         self.window = window
         window.makeKeyAndVisible()
@@ -53,7 +52,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
     }
-
 
 }
 
