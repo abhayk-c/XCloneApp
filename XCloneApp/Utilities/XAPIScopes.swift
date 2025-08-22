@@ -12,7 +12,7 @@ public struct XAPIScopes: OptionSet {
     public init(rawValue: Int) {
         self.rawValue = rawValue
     }
-
+    
     public static let tweetRead = XAPIScopes(rawValue: 1 << 0)
     public static let tweetWrite = XAPIScopes(rawValue: 1 << 1)
     public static let tweetModerateWrite = XAPIScopes(rawValue: 1 << 2)

@@ -17,8 +17,8 @@ public class XLoginViewController: UIViewController, XLoginViewDelegate, XAuthen
     private let viewModel: XLoginViewModel
 
     private lazy var authenticationManager: XAuthenticationManager = {
-        let authManager = XAuthenticationManager()
-        authManager.delegate = self
+        let authService = XAuthenticationService()
+        let authManager = XAuthenticationManager(self, authService)
         return authManager
     }()
 

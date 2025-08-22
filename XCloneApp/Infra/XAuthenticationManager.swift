@@ -28,13 +28,20 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
 
     public weak var delegate: XAuthenticationManagerDelegate?
 
+    private let authenticationService: XAuthenticationService
     private var authenticationState: XAuthenticationState = .none
     private var authenticationSession: ASWebAuthenticationSession?
     private var csrf = XCSRFState()
     private var pkce = XPKCECodeChallenge(.plain)
     private var authorizationCode = ""
-    private static let kURLScheme = "xcloneapp"
 
+    public init(_ delegate: XAuthenticationManagerDelegate?,
+                _ authenticationService: XAuthenticationService)
+    {
+        self.delegate = delegate
+        self.authenticationService = authenticationService
+    }
+    
     public func authenticate() {
         csrf = XCSRFState()
         pkce = XPKCECodeChallenge(.s256)
@@ -87,8 +94,8 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
                                                                 if let strongSelf = self {
                                                                     if let callbackURI = callbackURL, error == nil {
                                                                         if let urlComponents = URLComponents(string: callbackURI.absoluteString) {
-                                                                            let stateQueryParam = urlComponents.queryItems?.first(where: { $0.name == "state" })
-                                                                            let authCodeQueryParam = urlComponents.queryItems?.first(where: { $0.name == "code" })
+                                                                            let stateQueryParam = urlComponents.queryItems?.first(where: { $0.name == XAuthenticationConstants.stateKey })
+                                                                            let authCodeQueryParam = urlComponents.queryItems?.first(where: { $0.name == XAuthenticationConstants.codeKey })
                                                                             if let state = stateQueryParam?.value, let authCode = authCodeQueryParam?.value {
                                                                                 if state == strongSelf.csrf.state {
                                                                                     strongSelf.authorizationCode = authCode
@@ -107,8 +114,12 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
     }
 
     private func handleFetchingAccessAndRefreshTokens() {
-        print("Beginning Access Token fetch")
-        print("Authorization Code: \(authorizationCode)")
+        authenticationService.fetchTokenCredentialsDuringOAuth(authorizationCode,
+                                                               XAuthenticationConstants.clientID,
+                                                               XAuthenticationConstants.redirectURI,
+                                                               pkce.codeVerifier) { tokenCredentials in
+            print("AuthManager: Access Token fetched")
+        }
     }
 
     private func handleAuthenticationSuccessOrFailure() {

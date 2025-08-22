@@ -1,0 +1,30 @@
+//
+//  XSharedConstants.swift
+//  XCloneApp
+//
+//  Created by Abhay Curam on 8/21/25.
+//
+
+public struct XAuthenticationConstants {
+    // URI's
+    static let redirectURI = "xcloneapp://"
+    static let authorizationEndpointURI = "https://x.com/i/oauth2/authorize"
+    static let authTokenEndpointURI = "https://api.x.com/2/oauth2/token"
+    
+    // Key's
+    static let responseTypeKey = "response_type"
+    static let clientIDKey = "client_id"
+    static let redirectURIKey = "redirect_uri"
+    static let codeVerifierKey = "code_verifier"
+    static let codeChallengeKey = "code_challenge"
+    static let codeChallengeMethodKey = "code_challenge_method"
+    static let apiScopesKey = "scope"
+    static let stateKey = "state"
+    static let codeKey = "code"
+    static let grantTypeKey = "grant_type"
+    
+    // Values
+    static let clientID = "WlNIR1ZoUWE3OTh3NElJMWM3Q2o6MTpjaQ"
+    static let responseType = codeKey
+    static let grantType = "authorization_code"
+}

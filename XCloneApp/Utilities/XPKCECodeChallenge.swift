@@ -8,6 +8,11 @@
 import Foundation
 import CryptoKit
 
+public enum XPKCECodeChallengeMethod: String {
+    case plain = "plain"
+    case s256 = "S256"
+}
+
 public struct XPKCECodeChallenge {
 
     public let codeVerifier: String
@@ -27,7 +32,7 @@ public struct XPKCECodeChallenge {
         } else {
             let inputData = Data(self.codeVerifier.utf8)
             let hash = SHA256.hash(data: inputData)
-            self.codeChallenge = Data(hash).base64EncodedString()
+            self.codeChallenge = Data(hash).base64URLEncodedString()
         }
     }
 

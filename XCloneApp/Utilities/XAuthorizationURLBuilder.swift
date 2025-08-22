@@ -7,21 +7,6 @@
 
 import Foundation
 
-private struct XAuthURLConstants {
-    static let authorizationURI = "https://x.com/i/oauth2/authorize"
-    static let redirectURI = "xcloneapp://"
-    static let clientID = "WlNIR1ZoUWE3OTh3NElJMWM3Q2o6MTpjaQ"
-    static let responseTypeValue = "code"
-
-    static let responseTypeKey = "response_type"
-    static let clientIDKey = "client_id"
-    static let redirectURIKey = "redirect_uri"
-    static let stateKey = "state"
-    static let codeChallengeKey = "code_challenge"
-    static let codeChallengeMethodKey = "code_challenge_method"
-    static let apiScopesKey = "scope"
-}
-
 public struct XAuthorizationURLBuilder {
 
     public var apiScopes: XAPIScopes = []
@@ -30,15 +15,15 @@ public struct XAuthorizationURLBuilder {
     public var codeChallengeMethod: XPKCECodeChallengeMethod = .plain
 
     public func buildURL() -> URL? {
-        var urlComponents = URLComponents(string: XAuthURLConstants.authorizationURI)
+        var urlComponents = URLComponents(string: XAuthenticationConstants.authorizationEndpointURI)
         var urlQueryItems: [URLQueryItem] = []
-        urlQueryItems.append(URLQueryItem(name: XAuthURLConstants.responseTypeKey, value: XAuthURLConstants.responseTypeValue))
-        urlQueryItems.append(URLQueryItem(name: XAuthURLConstants.clientIDKey, value: XAuthURLConstants.clientID))
-        urlQueryItems.append(URLQueryItem(name: XAuthURLConstants.redirectURIKey, value: XAuthURLConstants.redirectURI))
-        urlQueryItems.append(URLQueryItem(name: XAuthURLConstants.stateKey, value: state))
-        urlQueryItems.append(URLQueryItem(name: XAuthURLConstants.codeChallengeKey, value: codeChallenge))
-        urlQueryItems.append(URLQueryItem(name: XAuthURLConstants.codeChallengeMethodKey, value: codeChallengeMethod.rawValue))
-        urlQueryItems.append(URLQueryItem(name: XAuthURLConstants.apiScopesKey, value: apiScopes.toString()))
+        urlQueryItems.append(URLQueryItem(name: XAuthenticationConstants.responseTypeKey, value: XAuthenticationConstants.responseType))
+        urlQueryItems.append(URLQueryItem(name: XAuthenticationConstants.clientIDKey, value: XAuthenticationConstants.clientID))
+        urlQueryItems.append(URLQueryItem(name: XAuthenticationConstants.redirectURIKey, value: XAuthenticationConstants.redirectURI))
+        urlQueryItems.append(URLQueryItem(name: XAuthenticationConstants.stateKey, value: state))
+        urlQueryItems.append(URLQueryItem(name: XAuthenticationConstants.codeChallengeKey, value: codeChallenge))
+        urlQueryItems.append(URLQueryItem(name: XAuthenticationConstants.codeChallengeMethodKey, value: codeChallengeMethod.rawValue))
+        urlQueryItems.append(URLQueryItem(name: XAuthenticationConstants.apiScopesKey, value: apiScopes.toString()))
         urlComponents?.queryItems = urlQueryItems
         return urlComponents?.url
     }
