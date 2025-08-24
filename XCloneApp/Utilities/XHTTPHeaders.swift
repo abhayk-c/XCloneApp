@@ -10,7 +10,7 @@ public protocol XHTTPHeader {
 }
 
 public struct XAuthorizationHTTPHeader: XHTTPHeader {
-    public private(set) var headerParams: [String : String]
+    public private(set) var headerParams: [String: String]
     public init(_ token: String) {
         let bearerTokenStr = "Bearer \(token)"
         headerParams = ["Authorization": bearerTokenStr]
@@ -18,9 +18,8 @@ public struct XAuthorizationHTTPHeader: XHTTPHeader {
 }
 
 public struct XContentTypeHTTPHeader: XHTTPHeader {
-    public private(set) var headerParams: [String : String]
+    public private(set) var headerParams: [String: String]
     public init() {
         headerParams = ["Content-Type": "application/x-www-form-urlencoded"]
     }
 }
-

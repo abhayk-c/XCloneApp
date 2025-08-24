@@ -45,5 +45,13 @@ public class XLoginViewController: UIViewController, XLoginViewDelegate, XAuthen
     public func presentationWindowForAuthSession() -> UIWindow? {
         return UIApplication.shared.currentSceneDelegateWindow
     }
+    
+    public func authenticationDidSucceed() {
+        // no op
+    }
+    
+    public func authenticationFailedWithError(_ error: XAuthenticationError) {
+        // no op
+    }
 
 }

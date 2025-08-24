@@ -22,9 +22,9 @@ public enum XHTTPMethod: String {
 public struct XHTTPRequestBuilder {
     
     public var httpMethod: XHTTPMethod = .get
-    public var url: URL? = nil
+    public var url: URL?
     public var httpHeaders: [XHTTPHeader] = []
-    public var httpBody: [String : String] = [:]
+    public var httpBody: [String: String] = [:]
     
     public func buildRequest() -> URLRequest? {
         guard let url = url else { return nil }

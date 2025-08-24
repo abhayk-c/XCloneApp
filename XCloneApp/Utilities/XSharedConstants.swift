@@ -7,7 +7,8 @@
 
 public struct XAuthenticationConstants {
     // URI's
-    static let redirectURI = "xcloneapp://"
+    static let redirectScheme = "xcloneapp"
+    static let redirectURI = redirectScheme + "://"
     static let authorizationEndpointURI = "https://x.com/i/oauth2/authorize"
     static let authTokenEndpointURI = "https://api.x.com/2/oauth2/token"
     
@@ -22,9 +23,11 @@ public struct XAuthenticationConstants {
     static let stateKey = "state"
     static let codeKey = "code"
     static let grantTypeKey = "grant_type"
+    static let refreshTokenKey = "refresh_token"
     
     // Values
     static let clientID = "WlNIR1ZoUWE3OTh3NElJMWM3Q2o6MTpjaQ"
     static let responseType = codeKey
-    static let grantType = "authorization_code"
+    static let grantTypeAuthCode = "authorization_code"
+    static let grantTypeRefreshToken = "refresh_token"
 }
