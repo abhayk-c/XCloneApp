@@ -27,10 +27,10 @@ public typealias XAuthServiceCompletionHandler = ((_ tokenCredentials: XTokenCre
  * callback's are called on the main-thread, and API's are expected to be called on main.
  */
 public class XAuthenticationService {
-    
+
     private var oauthCompletion: XAuthServiceCompletionHandler?
     private var refreshTokenCompletion: XAuthServiceCompletionHandler?
-    
+
     // MARK: Public API
     public func fetchTokenCredentialsDuringOAuth(_ authorizationCode: String,
                                                  _ clientID: String,
@@ -52,11 +52,13 @@ public class XAuthenticationService {
                 XAuthenticationConstants.codeVerifierKey: codeVerifier
             ]
             if let request = requestBuilder.buildRequest() {
-                let task = URLSession.shared.dataTask(with: request) { [weak self] (data: Data?, response: URLResponse?, error: Error?) in
-                    if let strongSelf = self {
-                        DispatchQueue.main.async {
-                            strongSelf.handleAuthTokenEndpointResponse(data, error, strongSelf.oauthCompletion)
-                            strongSelf.oauthCompletion = nil
+                let task = URLSession.shared.dataTask(with: request) { (data: Data?, _: URLResponse?, error: Error?) in
+                    DispatchQueue.main.async { [weak self] in
+                        if let strongSelf = self {
+                            if let oauthCompletion = strongSelf.oauthCompletion {
+                                strongSelf.oauthCompletion = nil
+                                strongSelf.handleAuthTokenEndpointResponse(data, error, oauthCompletion)
+                            }
                         }
                     }
                 }
@@ -64,7 +66,7 @@ public class XAuthenticationService {
             }
         }
     }
-    
+
     public func fetchTokenCredentialsFromRefreshToken(_ refreshToken: String,
                                                       _ clientID: String,
                                                       _ completion: @escaping XAuthServiceCompletionHandler) {
@@ -81,20 +83,21 @@ public class XAuthenticationService {
                 XAuthenticationConstants.grantTypeKey: XAuthenticationConstants.grantTypeRefreshToken
             ]
             if let request = requestBuilder.buildRequest() {
-                let task = URLSession.shared.dataTask(with: request) { [weak self] (data: Data?, response: URLResponse?, error: Error?) in
-                    if let strongSelf = self {
-                        DispatchQueue.main.async {
-                            strongSelf.handleAuthTokenEndpointResponse(data, error, strongSelf.refreshTokenCompletion)
-                            strongSelf.refreshTokenCompletion = nil
+                let task = URLSession.shared.dataTask(with: request) { (data: Data?, _: URLResponse?, error: Error?) in
+                    DispatchQueue.main.async { [weak self] in
+                        if let strongSelf = self {
+                            if let refreshTokenCompletion = strongSelf.refreshTokenCompletion {
+                                strongSelf.refreshTokenCompletion = nil
+                                strongSelf.handleAuthTokenEndpointResponse(data, error, refreshTokenCompletion)
+                            }
                         }
                     }
                 }
-                print("firing request to fetch refresh token")
                 task.resume()
             }
         }
     }
-    
+
     // MARK: Private Helpers
     private func handleAuthTokenEndpointResponse(_ data: Data?,
                                                  _ error: Error?,
@@ -114,5 +117,5 @@ public class XAuthenticationService {
             }
         }
     }
-    
+
 }

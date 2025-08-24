@@ -8,37 +8,68 @@
 import UIKit
 import AuthenticationServices
 
+private let invalidCSFError = NSError(domain: "authManager",
+                                          code: 0,
+                                          userInfo: [NSLocalizedDescriptionKey: "Invalid CSF State parameter during Oauth2.0 authorization"])
+
+private let emptyResponseError = NSError(domain: "authManager",
+                                             code: 0,
+                                             userInfo: [NSLocalizedDescriptionKey: "Empty response from authorization server"])
+
 private enum XAuthenticationState {
     case none
     case authorizingUser
-    case fetchingAccessAndRefreshTokens
+    case fetchingTokenCredentials(_ authorizationCode: String, _ pkce: XPKCECodeChallenge)
+    case settingTokenCredentials(_ credentials: XTokenCredentials)
     case authenticationSuccess
-    case authenticationFailed
+    case authenticationFailed(_ error: XAuthenticationError)
+}
+
+public enum XAuthenticationError: Error {
+    case userAuthError(_ error: Error?)
+    case fetchingTokenCredentialsError(_ error: Error?)
+    case settingTokenCredentialsError(_ error: Error?)
 }
 
 public protocol XAuthenticationManagerDelegate: AnyObject {
     func presentationWindowForAuthSession() -> UIWindow?
+    func authenticationDidSucceed(_ userSession: XUserSession)
+    func authenticationFailedWithError(_ error: XAuthenticationError)
 }
 
-private struct XAuthenticationManagerConstants {
-    static let urlScheme = "xcloneapp"
-}
-
+/**
+ * XAuthenticationManager manages user authorization and authentication with X's backend.
+ * X's authentication server is based on OAuth 2.0 PKCE standard, please use this object to
+ * easily manage and drive the user authentication process.
+ *
+ * This object provides an easy to use Facade API, simply invoke authenticate() and let
+ * the manager take care of the rest. Please set the delegate to get notifited if the
+ * authentication succeeds or fails. On authentication success we will pass back the XUserSession
+ * object fully configured and activated for the current "session."
+ * This service object is "main-thread" confined and not thread safe.
+ */
 public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationContextProviding {
 
     public weak var delegate: XAuthenticationManagerDelegate?
 
+    private let userSession: XUserSession
     private var authenticationState: XAuthenticationState = .none
-    private var authenticationSession: ASWebAuthenticationSession?
-    private var csrf = XCSRFState()
-    private var pkce = XPKCECodeChallenge(.plain)
-    private var authorizationCode = ""
-    private static let kURLScheme = "xcloneapp"
+    private let authService: XAuthenticationService
+    private var authSession: ASWebAuthenticationSession?
 
+    // MARK: Initialization
+    public init(_ userSession: XUserSession,
+                _ delegate: XAuthenticationManagerDelegate?,
+                _ authenticationService: XAuthenticationService) {
+        preconditionMainThread()
+        self.userSession = userSession
+        self.delegate = delegate
+        self.authService = authenticationService
+    }
+
+    // MARK: Public API
     public func authenticate() {
-        csrf = XCSRFState()
-        pkce = XPKCECodeChallenge(.s256)
-        authorizationCode = ""
+        preconditionMainThread()
         updateState(.none) // always reset
         updateState(.authorizingUser)
     }
@@ -47,72 +78,120 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
         return delegate?.presentationWindowForAuthSession() ?? UIWindow()
     }
 
+    // MARK: Private Helpers
     private func updateState(_ newState: XAuthenticationState) {
         switch newState {
         case .none:
             authenticationState = newState
         case .authorizingUser:
-            if authenticationState == .none {
+            if case .none = authenticationState {
                 authenticationState = newState
                 handleAuthorizingUser()
             }
-        case .fetchingAccessAndRefreshTokens:
-            if authenticationState == .authorizingUser {
+        case .fetchingTokenCredentials(let authorizationCode, let pkce):
+            if case .authorizingUser = authenticationState {
                 authenticationState = newState
-                handleFetchingAccessAndRefreshTokens()
+                handleFetchingTokenCredentials(authorizationCode, pkce)
+            }
+        case .settingTokenCredentials(let credentials):
+            if case .fetchingTokenCredentials = authenticationState {
+                authenticationState = newState
+                handleSettingTokenCredentials(credentials)
             }
         case .authenticationSuccess:
-            if authenticationState == .fetchingAccessAndRefreshTokens {
+            if case .settingTokenCredentials = authenticationState {
                 authenticationState = newState
-                handleAuthenticationSuccessOrFailure()
+                handleAuthenticationSuccess()
             }
-        case .authenticationFailed:
-            if authenticationState != .none && authenticationState != .authenticationSuccess {
+        case .authenticationFailed(let error):
+            switch authenticationState {
+            case .none, .authenticationSuccess:
+                return
+            default:
                 authenticationState = newState
-                handleAuthenticationSuccessOrFailure()
+                handleAuthenticationFailure(error)
             }
         }
     }
 
     private func handleAuthorizingUser() {
+        let pkce = XPKCECodeChallenge(.s256)
+        let csrf = XCSRFState()
         var authUriBuilder = XAuthorizationURLBuilder()
         authUriBuilder.apiScopes = .readTimelineWithOfflineAccess
         authUriBuilder.codeChallenge = pkce.codeChallenge
         authUriBuilder.codeChallengeMethod = pkce.challengeMethod
         authUriBuilder.state = csrf.state
         if let authUri = authUriBuilder.buildURL() {
-            authenticationSession = ASWebAuthenticationSession(url: authUri,
-                                                               callbackURLScheme: XAuthenticationManagerConstants.urlScheme,
-                                                               completionHandler: { [weak self] (callbackURL, error) in
-                                                                if let strongSelf = self {
-                                                                    if let callbackURI = callbackURL, error == nil {
-                                                                        if let urlComponents = URLComponents(string: callbackURI.absoluteString) {
-                                                                            let stateQueryParam = urlComponents.queryItems?.first(where: { $0.name == "state" })
-                                                                            let authCodeQueryParam = urlComponents.queryItems?.first(where: { $0.name == "code" })
-                                                                            if let state = stateQueryParam?.value, let authCode = authCodeQueryParam?.value {
-                                                                                if state == strongSelf.csrf.state {
-                                                                                    strongSelf.authorizationCode = authCode
-                                                                                    strongSelf.updateState(.fetchingAccessAndRefreshTokens)
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    } else {
-
-                                                                    }
-                                                                }
-                                                               })
-            authenticationSession?.presentationContextProvider = self
-            authenticationSession?.start()
+            authSession = ASWebAuthenticationSession(url: authUri,
+                                                     callbackURLScheme: XAuthenticationConstants.redirectScheme,
+                                                     completionHandler: { [weak self] (callbackURL, error) in
+                                                        if let strongSelf = self {
+                                                            strongSelf.handleAuthorizationCallback(callbackURL, error, pkce, csrf)
+                                                        }})
+            authSession?.presentationContextProvider = self
+            authSession?.start()
         }
     }
 
-    private func handleFetchingAccessAndRefreshTokens() {
-        print("Beginning Access Token fetch")
-        print("Authorization Code: \(authorizationCode)")
+    private func handleAuthorizationCallback(_ callbackURL: URL?,
+                                             _ error: Error?,
+                                             _ pkce: XPKCECodeChallenge,
+                                             _ csrf: XCSRFState) {
+        if let callbackURI = callbackURL, error == nil {
+            if let urlComponents = URLComponents(string: callbackURI.absoluteString) {
+                let stateQueryParam = urlComponents.queryItems?.first(where: { $0.name == XAuthenticationConstants.stateKey })
+                let authCodeQueryParam = urlComponents.queryItems?.first(where: { $0.name == XAuthenticationConstants.codeKey })
+                if let state = stateQueryParam?.value, let authCode = authCodeQueryParam?.value {
+                    if state == csrf.state {
+                        updateState(.fetchingTokenCredentials(authCode, pkce))
+                    } else {
+                        updateState(.authenticationFailed(.userAuthError(invalidCSFError)))
+                    }
+                } else {
+                    updateState(.authenticationFailed(.userAuthError(emptyResponseError)))
+                }
+            } else {
+                updateState(.authenticationFailed(.userAuthError(emptyResponseError)))
+            }
+        } else {
+            updateState(.authenticationFailed(.userAuthError(error)))
+        }
     }
 
-    private func handleAuthenticationSuccessOrFailure() {
+    private func handleFetchingTokenCredentials(_ authorizationCode: String, _ pkce: XPKCECodeChallenge) {
+        authService.fetchTokenCredentialsDuringOAuth(authorizationCode,
+                                                               XAuthenticationConstants.clientID,
+                                                               XAuthenticationConstants.redirectURI,
+                                                               pkce.codeVerifier) { [weak self] tokenCredentials, error in
+            if let strongSelf = self {
+                if let tokenCredentials = tokenCredentials, error == nil {
+                    strongSelf.updateState(.settingTokenCredentials(tokenCredentials))
+                } else {
+                    strongSelf.updateState(.authenticationFailed(.fetchingTokenCredentialsError(error)))
+                }
+            }
+        }
+    }
 
+    private func handleSettingTokenCredentials(_ tokenCredentials: XTokenCredentials) {
+        userSession.setTokenCredentials(tokenCredentials) { [weak self] (didSetCredentials: Bool, error: XUserSessionError?) in
+            if let strongSelf = self {
+                if didSetCredentials && error == nil {
+                    strongSelf.updateState(.authenticationSuccess)
+                } else {
+                    strongSelf.updateState(.authenticationFailed(.settingTokenCredentialsError(error)))
+                }
+            }
+        }
+    }
+
+    private func handleAuthenticationSuccess() {
+        delegate?.authenticationDidSucceed(userSession)
+    }
+
+    private func handleAuthenticationFailure(_ error: XAuthenticationError) {
+        delegate?.authenticationFailedWithError(error)
     }
 
 }

@@ -64,6 +64,7 @@ public class XLoginView: UIView {
         return loginButton
     }()
 
+    // MARK: Public Init
     public init(frame: CGRect,
                 loginViewModel: XLoginViewModel,
                 delegate: XLoginViewDelegate?) {
@@ -102,6 +103,7 @@ public class XLoginView: UIView {
         loginButton.frame = CGRect(x: loginButtonX, y: loginButtonY, width: loginButtonBounds.width, height: loginButtonBounds.height)
     }
 
+    // MARK: XLoginViewDelegate
     @objc private func loginButtonTapped(_ sender: UIButton) {
         delegate?.loginViewDidTapLoginButton(self)
     }
