@@ -8,6 +8,16 @@
 import Foundation
 import CryptoKit
 
+public enum XPKCECodeChallengeMethod: String {
+    case plain = "plain"
+    case s256 = "S256"
+}
+
+/**
+ * Helpful struct for generating PKCE parameters for use during OAuth2.0
+ * Follows spec: https://www.oauth.com/oauth2-servers/pkce/
+ * Inpsired by Apple's UUID class.
+ */
 public struct XPKCECodeChallenge {
 
     public let codeVerifier: String
@@ -27,7 +37,7 @@ public struct XPKCECodeChallenge {
         } else {
             let inputData = Data(self.codeVerifier.utf8)
             let hash = SHA256.hash(data: inputData)
-            self.codeChallenge = Data(hash).base64EncodedString()
+            self.codeChallenge = Data(hash).base64URLEncodedString()
         }
     }
 

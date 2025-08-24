@@ -7,6 +7,10 @@
 
 import Foundation
 
+/**
+ * Twitter Auth API requires this.
+ * See more here: https://en.wikipedia.org/wiki/Cross-site_request_forgery
+ */
 public struct XCSRFState {
     public let state: String
     public init() {
