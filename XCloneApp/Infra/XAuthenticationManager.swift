@@ -9,12 +9,12 @@ import UIKit
 import AuthenticationServices
 
 private let invalidCSFError = NSError(domain: "authManager",
-                                          code: 0,
-                                          userInfo: [NSLocalizedDescriptionKey: "Invalid CSF State parameter during Oauth2.0 authorization"])
+                                      code: 0,
+                                      userInfo: [NSLocalizedDescriptionKey: "Invalid CSF State parameter during Oauth2.0 authorization"])
 
 private let emptyResponseError = NSError(domain: "authManager",
-                                             code: 0,
-                                             userInfo: [NSLocalizedDescriptionKey: "Empty response from authorization server"])
+                                         code: 0,
+                                         userInfo: [NSLocalizedDescriptionKey: "Empty response from authorization server"])
 
 private enum XAuthenticationState {
     case none

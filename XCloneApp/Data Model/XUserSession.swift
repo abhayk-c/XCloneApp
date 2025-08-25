@@ -44,11 +44,14 @@ public class XUserSession {
     private var setTokenCredentialsCompletion: XSetTokenCredentialsCompletionHandler?
     private var getAccessTokenCompletion: XGetAccessTokenCompletionHandler?
     private var authenticationService: XAuthenticationService
+    private var keychainTokenStore: XSecureKeychainTokenStore
 
     // MARK: Public Init
-    public init(_ authenticationService: XAuthenticationService) {
+    public init(_ authenticationService: XAuthenticationService,
+                _ tokenStore: XSecureKeychainTokenStore) {
         preconditionMainThread()
         self.authenticationService = authenticationService
+        self.keychainTokenStore = tokenStore
     }
 
     // MARK: Public API
@@ -71,8 +74,8 @@ public class XUserSession {
             userSessionQueue.async { [weak self] in
                 guard let strongSelf = self else { return }
                 // First, lets set the access token in keychain
-                var status = strongSelf.upsertTokenInKeychain(tokenCredentials.accessToken,
-                                                              XUserSessionConstants.accessTokenKeychainId)
+                var status = strongSelf.keychainTokenStore.upsertTokenInKeychain(tokenCredentials.accessToken,
+                                                                                 XUserSessionConstants.accessTokenKeychainId)
                 if status != errSecSuccess {
                     DispatchQueue.main.async { [weak self] in
                         guard let strongSelf = self else { return }
@@ -81,8 +84,8 @@ public class XUserSession {
                     return
                 }
                 // Second, lets set the refresh token in keychain
-                status = strongSelf.upsertTokenInKeychain(tokenCredentials.refreshToken,
-                                                          XUserSessionConstants.refreshTokenKeychainId)
+                status = strongSelf.keychainTokenStore.upsertTokenInKeychain(tokenCredentials.refreshToken,
+                                                                             XUserSessionConstants.refreshTokenKeychainId)
                 if status != errSecSuccess {
                     DispatchQueue.main.async { [weak self] in
                         guard let strongSelf = self else { return }
@@ -120,7 +123,7 @@ public class XUserSession {
             } else {
                 userSessionQueue.async { [weak self] in
                     guard let strongSelf = self else { return }
-                    let readAccessToken = strongSelf.readTokenFromKeychain(XUserSessionConstants.accessTokenKeychainId)
+                    let readAccessToken = strongSelf.keychainTokenStore.readTokenFromKeychain(XUserSessionConstants.accessTokenKeychainId)
                     let sessionExpiry: TimeInterval = UserDefaults.standard.double(forKey: XUserSessionConstants.sessionExpiryDefaultsKey)
                     if readAccessToken.status == errSecSuccess, let accessToken = readAccessToken.token {
                         if Date().timeIntervalSince1970 < sessionExpiry - XUserSessionConstants.sessionExpiryThreshold {
@@ -161,7 +164,7 @@ public class XUserSession {
 
     private func refreshSessionAndUpdateAccessToken() {
         // Read refresh token from keychain, we are on background thread context.
-        let readRefreshToken = readTokenFromKeychain(XUserSessionConstants.refreshTokenKeychainId)
+        let readRefreshToken = keychainTokenStore.readTokenFromKeychain(XUserSessionConstants.refreshTokenKeychainId)
         if let refreshToken = readRefreshToken.token, readRefreshToken.status == errSecSuccess {
             DispatchQueue.main.async { [weak self] in
                 guard let strongSelf = self else { return }
@@ -191,57 +194,6 @@ public class XUserSession {
                 strongSelf.safelyCallGetAccessTokenCompletion(nil, .keychainError(readRefreshToken.status))
             }
         }
-    }
-
-    // MARK: Private Keychain persistence and update API's.
-    //
-    // This should been broken out into a separate Service object like
-    // SecureTokenStorageService or even a more generic KeychainService.
-    // Chose this route for dev speed and because this is probably the only place we'll use keychain API.
-    private func readTokenFromKeychain(_ tokenIdentifier: String) -> (token: String?, status: OSStatus) {
-        let query = [
-            kSecClass: kSecClassGenericPassword,
-            kSecAttrAccount: tokenIdentifier,
-            kSecMatchLimit: kSecMatchLimitOne,
-            kSecReturnData: true
-        ] as CFDictionary
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query, &result)
-        if status == errSecSuccess, let tokenData = result as? Data {
-            let token = String(data: tokenData, encoding: .utf8)
-            return (token, status)
-        }
-        return (nil, status)
-    }
-
-    private func upsertTokenInKeychain(_ token: String, _ tokenIdentifier: String) -> OSStatus {
-        let readToken = readTokenFromKeychain(tokenIdentifier)
-        if readToken.status == errSecSuccess {
-            return updateTokenInKeychain(token, tokenIdentifier)
-        } else if readToken.status == errSecItemNotFound {
-            return insertTokenInKeychain(token, tokenIdentifier)
-        }
-        return readToken.status
-    }
-
-    private func insertTokenInKeychain(_ token: String, _ tokenIdentifier: String) -> OSStatus {
-        guard let tokenData = token.data(using: .utf8) else { return errSecParam }
-        let attributes = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: tokenIdentifier,
-            kSecValueData as String: tokenData
-        ] as CFDictionary
-        return SecItemAdd(attributes, nil)
-    }
-
-    private func updateTokenInKeychain(_ token: String, _ tokenIdentifier: String) -> OSStatus {
-        guard let tokenData = token.data(using: .utf8) else { return errSecParam }
-        let attributes = [kSecValueData: tokenData] as CFDictionary
-        let query = [
-            kSecClass: kSecClassGenericPassword,
-            kSecAttrAccount: tokenIdentifier
-        ] as CFDictionary
-        return SecItemUpdate(query, attributes)
     }
 
 }
