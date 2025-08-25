@@ -63,4 +63,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
         // no op
     }
 
+    func loginViewControllerUserAuthenticationCancelled() {
+        // no op
+    }
+
 }

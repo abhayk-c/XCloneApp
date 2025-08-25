@@ -11,6 +11,12 @@ import SafariServices
 public protocol XLoginViewControllerDelegate: AnyObject {
     func loginViewControllerDidAuthenticateUser(_ userSession: XUserSession)
     func loginViewControllerUserAuthenticationFailed(_ error: XAuthenticationError?)
+    func loginViewControllerUserAuthenticationCancelled()
+}
+
+private struct XLoginViewControllerConstants {
+    static let authFailedAlertTitle = "Authentication Failed"
+    static let okActionAlertTitle = "OK"
 }
 
 /**
@@ -23,6 +29,11 @@ public class XLoginViewController: UIViewController, XLoginViewDelegate, XAuthen
     private let viewModel: XLoginViewModel
     private let userSession: XUserSession
     private let authenticationManager: XAuthenticationManager
+
+    private lazy var loginView: XLoginView = {
+        let loginView = XLoginView(frame: .zero, loginViewModel: viewModel, delegate: self)
+        return loginView
+    }()
 
     // MARK: Public Init
     public init(_ userSession: XUserSession,
@@ -42,13 +53,13 @@ public class XLoginViewController: UIViewController, XLoginViewDelegate, XAuthen
     }
 
     public override func loadView() {
-        let loginView = XLoginView(frame: .zero, loginViewModel: viewModel, delegate: self)
         let containerView = XSafeAreaInsetContainerView(frame: .zero, childView: loginView)
         containerView.backgroundColor = UIColor.black
         view = containerView
     }
 
     public func loginViewDidTapLoginButton(_ loginView: XLoginView) {
+        loginView.shouldDisplayLoginSpinner = true
         authenticationManager.authenticate()
     }
 
@@ -58,11 +69,24 @@ public class XLoginViewController: UIViewController, XLoginViewDelegate, XAuthen
     }
 
     public func authenticationDidSucceed(_ userSession: XUserSession) {
+        loginView.shouldDisplayLoginSpinner = false
         self.delegate?.loginViewControllerDidAuthenticateUser(userSession)
     }
 
     public func authenticationFailedWithError(_ error: XAuthenticationError) {
+        loginView.shouldDisplayLoginSpinner = false
+        let alertController = UIAlertController(title: XLoginViewControllerConstants.authFailedAlertTitle, message: error.localizedDescription, preferredStyle: .alert)
+        let OKAction = UIAlertAction(title: XLoginViewControllerConstants.okActionAlertTitle, style: .default) { (_) in
+            alertController.dismiss(animated: true)
+        }
+        alertController.addAction(OKAction)
+        self.present(alertController, animated: true)
         self.delegate?.loginViewControllerUserAuthenticationFailed(error)
+    }
+
+    public func authenticationCancelledByUser() {
+        loginView.shouldDisplayLoginSpinner = false
+        self.delegate?.loginViewControllerUserAuthenticationCancelled()
     }
 
 }
