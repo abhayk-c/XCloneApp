@@ -23,6 +23,7 @@ private enum XAuthenticationState {
     case settingTokenCredentials(_ credentials: XTokenCredentials)
     case authenticationSuccess
     case authenticationFailed(_ error: XAuthenticationError)
+    case authenticationCancelled
 }
 
 public enum XAuthenticationError: Error {
@@ -35,6 +36,7 @@ public protocol XAuthenticationManagerDelegate: AnyObject {
     func presentationWindowForAuthSession() -> UIWindow?
     func authenticationDidSucceed(_ userSession: XUserSession)
     func authenticationFailedWithError(_ error: XAuthenticationError)
+    func authenticationCancelledByUser()
 }
 
 /**
@@ -103,6 +105,14 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
                 authenticationState = newState
                 handleAuthenticationSuccess()
             }
+        case .authenticationCancelled:
+            switch authenticationState {
+            case .none, .authenticationSuccess:
+                return
+            default:
+                authenticationState = newState
+                handleAuthenticationCancelled()
+            }
         case .authenticationFailed(let error):
             switch authenticationState {
             case .none, .authenticationSuccess:
@@ -155,7 +165,11 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
                 updateState(.authenticationFailed(.userAuthError(emptyResponseError)))
             }
         } else {
-            updateState(.authenticationFailed(.userAuthError(error)))
+            if let authError = error as? ASWebAuthenticationSessionError, authError.code == .canceledLogin {
+                updateState(.authenticationCancelled)
+            } else {
+                updateState(.authenticationFailed(.userAuthError(error)))
+            }
         }
     }
 
@@ -192,6 +206,10 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
 
     private func handleAuthenticationFailure(_ error: XAuthenticationError) {
         delegate?.authenticationFailedWithError(error)
+    }
+
+    private func handleAuthenticationCancelled() {
+        delegate?.authenticationCancelledByUser()
     }
 
 }

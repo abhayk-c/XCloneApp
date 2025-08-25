@@ -195,7 +195,7 @@ public class XUserSession {
 
     // MARK: Private Keychain persistence and update API's.
     //
-    // Could have easily been broken out into a separate Service object like
+    // This should been broken out into a separate Service object like
     // SecureTokenStorageService or even a more generic KeychainService.
     // Chose this route for dev speed and because this is probably the only place we'll use keychain API.
     private func readTokenFromKeychain(_ tokenIdentifier: String) -> (token: String?, status: OSStatus) {

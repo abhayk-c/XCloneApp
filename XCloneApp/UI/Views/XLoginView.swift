@@ -35,9 +35,24 @@ private struct XLoginViewConstants {
 public class XLoginView: UIView {
 
     public var delegate: XLoginViewDelegate?
+
+    public var shouldDisplayLoginSpinner: Bool = false {
+        didSet {
+            if shouldDisplayLoginSpinner {
+                loginButton.isEnabled = false
+                if loginSpinnerView.isHidden { loginSpinnerView.isHidden = false }
+                loginSpinnerView.startAnimating()
+            } else {
+                loginButton.isEnabled = true
+                loginSpinnerView.stopAnimating()
+                if loginSpinnerView.isHidden { loginSpinnerView.isHidden = true }
+            }
+        }
+    }
+
     private var loginViewModel: XLoginViewModel
 
-    private var xLogoImageView: UIImageView = {
+    private lazy var xLogoImageView: UIImageView = {
         let xLogoImage = UIImage(named: XLoginViewConstants.logoImageName)
         return UIImageView(image: xLogoImage)
     }()
@@ -57,11 +72,18 @@ public class XLoginView: UIView {
         let loginButton = UIButton(type: .system)
         loginButton.titleLabel?.font = UIFont.systemFont(ofSize: 36, weight: .semibold)
         loginButton.setTitleColor(UIColor.white, for: .normal)
-        loginButton.setTitleColor(UIColor.white, for: .disabled)
+        loginButton.setTitleColor(UIColor.darkGray, for: .disabled)
         loginButton.setTitle(loginViewModel.loginButtonText, for: .normal)
         loginButton.setTitle(loginViewModel.loginButtonText, for: .disabled)
         loginButton.addTarget(self, action: #selector(loginButtonTapped(_:)), for: .touchUpInside)
         return loginButton
+    }()
+
+    private lazy var loginSpinnerView: UIActivityIndicatorView = {
+        let spinnerView = UIActivityIndicatorView(style: .large)
+        spinnerView.color = UIColor.lightGray
+        spinnerView.hidesWhenStopped = true
+        return spinnerView
     }()
 
     // MARK: Public Init
@@ -74,6 +96,7 @@ public class XLoginView: UIView {
         addSubview(self.xLogoImageView)
         addSubview(self.subHeaderLabel)
         addSubview(self.loginButton)
+        addSubview(self.loginSpinnerView)
     }
 
     public required init?(coder aDecoder: NSCoder) {
@@ -101,6 +124,13 @@ public class XLoginView: UIView {
         let loginButtonY = subHeaderLabel.frame.origin.y + subHeaderLabel.bounds.height + loginButtonYOffset
         let loginButtonX = (bounds.width / 2) - (loginButtonBounds.width / 2)
         loginButton.frame = CGRect(x: loginButtonX, y: loginButtonY, width: loginButtonBounds.width, height: loginButtonBounds.height)
+
+        let loginSpinnerBounds = loginSpinnerView.sizeThatFits(bounds.size)
+        let loginSpinnerYAnchor = subHeaderLabelY + subHeaderLabelBounds.height
+        let loginSpinnerYOffset = (loginButtonY - loginSpinnerYAnchor) / 2
+        let loginSpinnerY = (loginSpinnerYAnchor + loginSpinnerYOffset) - (loginSpinnerBounds.height / 2)
+        let loginSpinnerX = (bounds.size.width / 2) - (loginSpinnerBounds.width / 2)
+        loginSpinnerView.frame = CGRect(x: loginSpinnerX, y: loginSpinnerY, width: loginSpinnerBounds.width, height: loginSpinnerBounds.height)
     }
 
     // MARK: XLoginViewDelegate
