@@ -11,7 +11,7 @@ public struct XAuthenticationConstants {
     static let redirectURI = redirectScheme + "://"
     static let authorizationEndpointURI = "https://x.com/i/oauth2/authorize"
     static let authTokenEndpointURI = "https://api.x.com/2/oauth2/token"
-    
+
     // Key's
     static let responseTypeKey = "response_type"
     static let clientIDKey = "client_id"
@@ -24,7 +24,7 @@ public struct XAuthenticationConstants {
     static let codeKey = "code"
     static let grantTypeKey = "grant_type"
     static let refreshTokenKey = "refresh_token"
-    
+
     // Values
     static let clientID = "WlNIR1ZoUWE3OTh3NElJMWM3Q2o6MTpjaQ"
     static let responseType = codeKey

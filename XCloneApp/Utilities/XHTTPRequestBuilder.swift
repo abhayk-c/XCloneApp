@@ -23,12 +23,12 @@ public enum XHTTPMethod: String {
  * A builder struct for easily creating HTTP URLRequest's
  */
 public struct XHTTPRequestBuilder {
-    
+
     public var httpMethod: XHTTPMethod = .get
     public var url: URL?
     public var httpHeaders: [XHTTPHeader] = []
     public var httpBody: [String: String] = [:]
-    
+
     public func buildRequest() -> URLRequest? {
         guard let url = url else { return nil }
         var urlRequest = URLRequest(url: url)
@@ -49,5 +49,5 @@ public struct XHTTPRequestBuilder {
         }
         return urlRequest
     }
-    
+
 }

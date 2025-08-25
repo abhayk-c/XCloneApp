@@ -8,7 +8,7 @@
 import Foundation
 
 public extension Data {
-    
+
     /**
      * https://stackoverflow.com/questions/59911194/how-to-calculate-pckes-code-verifier
      */
@@ -17,5 +17,5 @@ public extension Data {
         while base64URLEncodedString.last == "=" { base64URLEncodedString.removeLast() }
         return base64URLEncodedString
     }
-    
+
 }
