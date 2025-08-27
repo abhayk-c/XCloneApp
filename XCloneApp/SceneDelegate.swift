@@ -18,7 +18,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
         guard let windowScene = (scene as? UIWindowScene) else { return }
         let window = UIWindow(windowScene: windowScene)
         let authenticationService = XAuthenticationService()
-        let userSession = XUserSession(authenticationService, XSecureKeychainTokenStore())
+        let userIdentityService = XUserIdentityService()
+        let userSession = XUserSession(authenticationService, userIdentityService, XSecureKeychainTokenStore())
         let loginViewModel = XLoginViewModel(subHeaderText: "See what's happening in the world right now.",
                                              loginButtonText: "Log in")
         let loginViewController = XLoginViewController(userSession, self, authenticationService, loginViewModel)

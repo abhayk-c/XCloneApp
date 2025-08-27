@@ -189,7 +189,7 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
     }
 
     private func handleSettingTokenCredentials(_ tokenCredentials: XTokenCredentials) {
-        userSession.setTokenCredentials(tokenCredentials) { [weak self] (didSetCredentials: Bool, error: XUserSessionError?) in
+        userSession.setCurrentSession(tokenCredentials) { [weak self] (didSetCredentials: Bool, error: XUserSessionError?) in
             if let strongSelf = self {
                 if didSetCredentials && error == nil {
                     strongSelf.updateState(.authenticationSuccess)
