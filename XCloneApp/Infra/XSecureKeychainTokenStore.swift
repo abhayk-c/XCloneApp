@@ -17,7 +17,7 @@ import Security
  * this as needed.
  */
 public struct XSecureKeychainTokenStore {
-    
+
     // MARK: Public API
     public func readTokenFromKeychain(_ tokenIdentifier: String) -> (token: String?, status: OSStatus) {
         let query = [
@@ -65,5 +65,5 @@ public struct XSecureKeychainTokenStore {
         ] as CFDictionary
         return SecItemUpdate(query, attributes)
     }
-    
+
 }
