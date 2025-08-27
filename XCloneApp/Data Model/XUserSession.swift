@@ -8,20 +8,13 @@
 import Foundation
 import Security
 
-private struct XUserSessionConstants {
-    static let accessTokenKeychainId = "x.accessToken"
-    static let refreshTokenKeychainId = "x.refreshToken"
-    static let authStatusDefaultsKey = "userAuthenticated"
-    static let sessionExpiryDefaultsKey = "sessionExpiry"
-    static let sessionExpiryThreshold: TimeInterval = 60
+public struct XUserSessionContext {
+    public let accessToken: String
+    public let user: XUser
 }
 
 public typealias XSetCurrentSessionCompletionHandler = ((_ didSetSessionCredentials: Bool, _ error: XUserSessionError?) -> Void)
-public typealias XGetAccessTokenCompletionHandler = ((_ accessToken: String?, _ error: XUserSessionError?) -> Void)
-public typealias XGetUserCompletionHandler = ((_ user: XUser?, _ error: XUserSessionError?) -> Void)
-public typealias XGetUserAndAccessTokenCompletionHandler = ((_ user: XUser?,
-                                                             _ accessToken: String?,
-                                                             _ error: XUserSessionError?) -> Void)
+public typealias XGetUserSessionContextCompletionHandler = ((_ sessionContext: XUserSessionContext?, _ error: XUserSessionError?) -> Void)
 
 public enum XUserSessionError: Error {
     case keychainError(_ status: OSStatus)
@@ -34,25 +27,33 @@ public enum XUserSessionError: Error {
  * with X. Please use this class to securely get the current authenticated XUser object and
  * the current active access token which are both needed to make backend X API calls.
  * You can also use this object to establish and set a new session with new token credentials.
- * This object is a foundational object that many feature surfacesrely on, as a result you will
+ * This object is a foundational object that many feature surfaces rely on, as a result you will
  * see this class in the constructor of many objects and passed to many dependencies generously
  * in the application.
  *
  * This object provides a simple Facade and takes care of the "secure storage" of session tokens/credentials
- * and refreshes the current session as needed (fetches new tokens). As a result API's are async.
- * This class is main-thread confined. You must call the API's on the main thread, callbacks are on the main-thread.
+ * and refreshes the current session as needed (fetches new tokens) under the hood. As a result API's are async.
+ * This class is main-thread confined. You must call the API's on the main thread, callbacks are
+ * invoked on the main-thread.
  */
 public class XUserSession {
 
+    private typealias XGetAccessTokenCompletionHandler = ((_ accessToken: String?, _ error: XUserSessionError?) -> Void)
+    private struct XUserSessionConstants {
+        static let accessTokenKeychainId = "x.accessToken"
+        static let refreshTokenKeychainId = "x.refreshToken"
+        static let authStatusDefaultsKey = "userAuthenticated"
+        static let sessionExpiryDefaultsKey = "sessionExpiry"
+        static let sessionExpiryThreshold: TimeInterval = 6900
+    }
+    
     private var accessToken: String?
     private var sessionExpiry: TimeInterval?
     private var currentUser: XUser?
-    private let userSessionQueue = DispatchQueue(label: "com.xcloneapp.usersession.queue", qos: .userInteractive)
+    private let userSessionQueue = DispatchQueue(label: "com.xcloneapp.usersession.queue", qos: .userInitiated)
 
     private var setCurrentSessionCompletion: XSetCurrentSessionCompletionHandler?
-    private var getAccessTokenCompletion: XGetAccessTokenCompletionHandler?
-    private var getUserCompletion: XGetUserCompletionHandler?
-    private var getUserAndAccessTokenCompletion: XGetUserAndAccessTokenCompletionHandler?
+    private var getUserSessionContextCompletion: XGetUserSessionContextCompletionHandler?
 
     private var authenticationService: XAuthenticationService
     private var userIdentityService: XUserIdentityService
@@ -115,114 +116,120 @@ public class XUserSession {
                     // Now save in memory
                     strongSelf.accessToken = tokenCredentials.accessToken
                     strongSelf.sessionExpiry = tokenCredentials.expiresAt
+                    /**
+                     * Clear any previous user because it would be stale.
+                     * We want to derive a new User object if we get a new accessToken
+                     * every time, letting the tokens be the source of truth.
+                     * We don't trigger a fetch for the authenticated user, its handled
+                     * "lazily" if needed. The user object itself isn't critical to the session
+                     * but the access tokens are.
+                     */
+                    strongSelf.currentUser = nil
                     strongSelf.safelyCallSetCurrentSessionCompletion(true, nil)
                 }
             }
         }
     }
 
-    public func getUserAndAccessToken(_ completion: @escaping XGetUserAndAccessTokenCompletionHandler) {
+    public func getUserSessionContext(_ completion: @escaping XGetUserSessionContextCompletionHandler) {
         preconditionMainThread()
-        if getUserAndAccessTokenCompletion == nil {
-            getUserAndAccessTokenCompletion = completion
-            getAccessToken { [weak self] (accessToken, error) in
-                guard let strongSelf = self else { return }
-                if let accessToken = accessToken, error == nil {
-                    strongSelf.getUser { [weak self] (user, error) in
-                        guard let strongSelf = self else { return }
-                        if let user = user, error == nil {
-                            strongSelf.safelyCallGetUserAndAccessTokenCompletion(user, accessToken, nil)
-                        } else {
-                            strongSelf.safelyCallGetUserAndAccessTokenCompletion(nil, nil, error)
-                        }
-                    }
-                } else {
-                    strongSelf.safelyCallGetUserAndAccessTokenCompletion(nil, nil, error)
-                }
-            }
-        }
-    }
-
-    public func getUser(_ completion: @escaping XGetUserCompletionHandler) {
-        preconditionMainThread()
-        if getUserCompletion == nil {
-            getUserCompletion = completion
+        if getUserSessionContextCompletion == nil {
+            getUserSessionContextCompletion = completion
             if let currentUser = currentUser {
-                if hasActiveSession() {
-                    safelyCallGetUserCompletion(currentUser, nil)
+                if let accessToken = accessToken, hasActiveSession() {
+                    let sessionContext = XUserSessionContext(accessToken: accessToken, user: currentUser)
+                    safelyCallGetUserSessionContextCompletion(sessionContext, nil)
                 } else {
-                    getAccessTokenAndFetchUser()
-                }
-            } else {
-                getAccessTokenAndFetchUser()
-            }
-        }
-    }
-
-    public func getAccessToken(_ completion: @escaping XGetAccessTokenCompletionHandler) {
-        preconditionMainThread()
-        if getAccessTokenCompletion == nil {
-            getAccessTokenCompletion = completion
-            if let accessToken = accessToken {
-                if hasActiveSession() {
-                    safelyCallGetAccessTokenCompletion(accessToken, nil)
-                } else {
-                    userSessionQueue.async { [weak self] in
+                    fetchUserAndUpdateCurrentSessionUser { [weak self] (sessionContext, error) in
                         guard let strongSelf = self else { return }
-                        strongSelf.refreshSessionAndUpdateAccessToken()
+                        strongSelf.safelyCallGetUserSessionContextCompletion(sessionContext, error)
                     }
                 }
             } else {
-                userSessionQueue.async { [weak self] in
+                fetchUserAndUpdateCurrentSessionUser { [weak self] (sessionContext, error) in
                     guard let strongSelf = self else { return }
-                    let readAccessToken = strongSelf.keychainTokenStore.readTokenFromKeychain(XUserSessionConstants.accessTokenKeychainId)
-                    let sessionExpiry: TimeInterval = UserDefaults.standard.double(forKey: XUserSessionConstants.sessionExpiryDefaultsKey)
-                    if readAccessToken.status == errSecSuccess, let accessToken = readAccessToken.token {
-                        if Date().timeIntervalSince1970 < sessionExpiry - XUserSessionConstants.sessionExpiryThreshold {
-                            DispatchQueue.main.async { [weak self] in
-                                guard let strongSelf = self else { return }
-                                strongSelf.accessToken = accessToken
-                                strongSelf.sessionExpiry = sessionExpiry
-                                strongSelf.safelyCallGetAccessTokenCompletion(accessToken, nil)
-                            }
-                        } else {
-                            strongSelf.refreshSessionAndUpdateAccessToken()
-                        }
-                    } else {
-                        DispatchQueue.main.async { [weak self] in
-                            guard let strongSelf = self else { return }
-                            strongSelf.safelyCallGetAccessTokenCompletion(nil, .keychainError(readAccessToken.status))
-                        }
-                    }
+                    strongSelf.safelyCallGetUserSessionContextCompletion(sessionContext, error)
                 }
             }
         }
     }
 
     // MARK: Private Helpers
-    private func getAccessTokenAndFetchUser() {
-        getAccessToken { [weak self] (accessToken, error) in
+    /**
+     * Fetches the current User from X's Identity endpoint and updates the current session.
+     * Returns a XUserSessionContext or Error
+     */
+    private func fetchUserAndUpdateCurrentSessionUser(_ completion: @escaping XGetUserSessionContextCompletionHandler) {
+        getAccessTokenAndRefreshSessionIfNeeded { [weak self] (accessToken, error) in
             guard let strongSelf = self else { return }
             if let accessToken = accessToken, error == nil {
-                strongSelf.userIdentityService.getUserForAccessToken(accessToken) { user, error in
+                strongSelf.userIdentityService.getUserForAccessToken(accessToken) { [weak self] user, error in
                     if let user = user, error == nil {
                         // Already on the main thread
                         guard let strongSelf = self else { return }
                         strongSelf.currentUser = user
-                        strongSelf.safelyCallGetUserCompletion(user, nil)
+                        let sessionContext = XUserSessionContext(accessToken: accessToken, user: user)
+                        completion(sessionContext, nil)
                     } else {
                         // Already on the main thread
                         guard let strongSelf = self else { return }
-                        strongSelf.safelyCallGetUserCompletion(user, .getUserFetchError(error))
+                        completion(nil, .getUserFetchError(error))
                     }
                 }
             } else {
-                strongSelf.safelyCallGetUserCompletion(nil, error)
+                completion(nil, error)
+            }
+        }
+    }
+    
+    /**
+     * Retrieves the current session access token either from cache or network.
+     * If the access token has expired this will get new valid tokens from X's token endpoint
+     * and "reset" the current session with the new token credentials.
+     * Returns the accessToken or an Error.
+     */
+    private func getAccessTokenAndRefreshSessionIfNeeded(_ completion: @escaping XGetAccessTokenCompletionHandler) {
+        preconditionMainThread()
+        if let accessToken = accessToken {
+            if hasActiveSession() {
+                completion(accessToken, nil)
+            } else {
+                userSessionQueue.async { [weak self] in
+                    guard let strongSelf = self else { return }
+                    strongSelf.refreshTokensAndUpdateCurrentSessionTokens(completion)
+                }
+            }
+        } else {
+            userSessionQueue.async { [weak self] in
+                guard let strongSelf = self else { return }
+                let readAccessToken = strongSelf.keychainTokenStore.readTokenFromKeychain(XUserSessionConstants.accessTokenKeychainId)
+                let sessionExpiry: TimeInterval = UserDefaults.standard.double(forKey: XUserSessionConstants.sessionExpiryDefaultsKey)
+                if readAccessToken.status == errSecSuccess, let accessToken = readAccessToken.token {
+                    if Date().timeIntervalSince1970 < sessionExpiry - XUserSessionConstants.sessionExpiryThreshold {
+                        DispatchQueue.main.async { [weak self] in
+                            guard let strongSelf = self else { return }
+                            strongSelf.accessToken = accessToken
+                            strongSelf.sessionExpiry = sessionExpiry
+                            completion(accessToken, nil)
+                        }
+                    } else {
+                        strongSelf.refreshTokensAndUpdateCurrentSessionTokens(completion)
+                    }
+                } else {
+                    DispatchQueue.main.async { [weak self] in
+                        guard let strongSelf = self else { return }
+                        completion(nil, .keychainError(readAccessToken.status))
+                    }
+                }
             }
         }
     }
 
-    private func refreshSessionAndUpdateAccessToken() {
+    /**
+     * Exchanges refresh tokens for new valid access tokens and resets the current session.
+     * Returns the access token or an Error.
+     */
+    private func refreshTokensAndUpdateCurrentSessionTokens(_ completion: @escaping XGetAccessTokenCompletionHandler) {
         // Read refresh token from keychain, we are on background thread context.
         let readRefreshToken = keychainTokenStore.readTokenFromKeychain(XUserSessionConstants.refreshTokenKeychainId)
         if let refreshToken = readRefreshToken.token, readRefreshToken.status == errSecSuccess {
@@ -238,37 +245,29 @@ public class XUserSession {
                             guard let strongSelf = self else { return }
                             // Already on the main thread so dont dispatch back to main.
                             if didSetSessionCredentials, let accessToken = strongSelf.accessToken {
-                                strongSelf.safelyCallGetAccessTokenCompletion(accessToken, nil)
+                                completion(accessToken, nil)
                             } else {
-                                strongSelf.safelyCallGetAccessTokenCompletion(nil, error)
+                                completion(nil, error)
                             }
                         }
                     } else {
-                        strongSelf.safelyCallGetAccessTokenCompletion(nil, .refreshTokenFetchError(error))
+                        completion(nil, .refreshTokenFetchError(error))
                     }
                 }
             }
         } else {
             DispatchQueue.main.async { [weak self] in
                 guard let strongSelf = self else { return }
-                strongSelf.safelyCallGetAccessTokenCompletion(nil, .keychainError(readRefreshToken.status))
+                completion(nil, .keychainError(readRefreshToken.status))
             }
         }
     }
 
-    private func safelyCallGetUserCompletion(_ user: XUser?, _ error: XUserSessionError?) {
-        if let completion = getUserCompletion {
-            self.getUserCompletion = nil
-            completion(user, error)
-        }
-    }
-
-    private func safelyCallGetUserAndAccessTokenCompletion(_ user: XUser?,
-                                                           _ accessToken: String?,
+    private func safelyCallGetUserSessionContextCompletion(_ sessionContext: XUserSessionContext?,
                                                            _ error: XUserSessionError?) {
-        if let completion = getUserAndAccessTokenCompletion {
-            self.getUserAndAccessTokenCompletion = nil
-            completion(user, accessToken, error)
+        if let completion = getUserSessionContextCompletion {
+            self.getUserSessionContextCompletion = nil
+            completion(sessionContext, error)
         }
     }
 
@@ -276,13 +275,6 @@ public class XUserSession {
         if let completion = setCurrentSessionCompletion {
             self.setCurrentSessionCompletion = nil
             completion(didSetSessionCredentials, error)
-        }
-    }
-
-    private func safelyCallGetAccessTokenCompletion(_ accessToken: String?, _ error: XUserSessionError?) {
-        if let completion = getAccessTokenCompletion {
-            self.getAccessTokenCompletion = nil
-            completion(accessToken, error)
         }
     }
 
