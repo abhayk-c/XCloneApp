@@ -46,7 +46,7 @@ public class XUserSession {
         static let sessionExpiryDefaultsKey = "sessionExpiry"
         static let sessionExpiryThreshold: TimeInterval = 6900
     }
-    
+
     private var accessToken: String?
     private var sessionExpiry: TimeInterval?
     private var currentUser: XUser?
@@ -172,7 +172,6 @@ public class XUserSession {
                         completion(sessionContext, nil)
                     } else {
                         // Already on the main thread
-                        guard let strongSelf = self else { return }
                         completion(nil, .getUserFetchError(error))
                     }
                 }
@@ -181,7 +180,7 @@ public class XUserSession {
             }
         }
     }
-    
+
     /**
      * Retrieves the current session access token either from cache or network.
      * If the access token has expired this will get new valid tokens from X's token endpoint
@@ -216,8 +215,7 @@ public class XUserSession {
                         strongSelf.refreshTokensAndUpdateCurrentSessionTokens(completion)
                     }
                 } else {
-                    DispatchQueue.main.async { [weak self] in
-                        guard let strongSelf = self else { return }
+                    DispatchQueue.main.async {
                         completion(nil, .keychainError(readAccessToken.status))
                     }
                 }
@@ -256,8 +254,7 @@ public class XUserSession {
                 }
             }
         } else {
-            DispatchQueue.main.async { [weak self] in
-                guard let strongSelf = self else { return }
+            DispatchQueue.main.async {
                 completion(nil, .keychainError(readRefreshToken.status))
             }
         }
