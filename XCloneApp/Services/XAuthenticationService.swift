@@ -13,7 +13,8 @@ public enum XAuthServiceError: Error {
     case httpError(error: Error)
 }
 
-public typealias XAuthServiceCompletionHandler = ((_ tokenCredentials: XTokenCredentials?, _ error: XAuthServiceError?) -> Void)
+public typealias XAuthServiceCompletionHandler = ((_ tokenCredentials: XTokenCredentialsModel?,
+                                                   _ error: XAuthServiceError?) -> Void)
 
 /**
  * XAuthenticationService helps authorize and authenticate a user with X's
@@ -107,7 +108,7 @@ public class XAuthenticationService {
         } else {
             if let data = data {
                 do {
-                    let credentials = try JSONDecoder().decode(XTokenCredentials.self, from: data)
+                    let credentials = try JSONDecoder().decode(XTokenCredentialsModel.self, from: data)
                     callbackCompletion?(credentials, nil)
                 } catch {
                     callbackCompletion?(nil, .jsonDecodingError(error: error))

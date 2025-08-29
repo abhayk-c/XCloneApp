@@ -7,7 +7,7 @@
 
 import Foundation
 
-public typealias XUserIdentityServiceCompletionHandler = ((_ user: XUser?, _ error: XUserIdentityServiceError?) -> Void)
+public typealias XUserIdentityServiceCompletionHandler = ((_ user: XUserModel?, _ error: XUserIdentityServiceError?) -> Void)
 
 public enum XUserIdentityServiceError: Error {
     case emptyResponseError
@@ -52,7 +52,7 @@ public class XUserIdentityService {
                         } else {
                             if let data = data {
                                 do {
-                                    let user = try JSONDecoder().decode(XDataContainer<XUser>.self, from: data)
+                                    let user = try JSONDecoder().decode(XUserResponseModel.self, from: data)
                                     strongSelf.safelyCallUserIdentityCompletion(user.data, nil)
                                 } catch {
                                     strongSelf.safelyCallUserIdentityCompletion(nil, .jsonDecodingError(error: error))
@@ -70,7 +70,7 @@ public class XUserIdentityService {
     }
 
     // MARK: Private Helpers
-    private func safelyCallUserIdentityCompletion(_ user: XUser?, _ error: XUserIdentityServiceError?) {
+    private func safelyCallUserIdentityCompletion(_ user: XUserModel?, _ error: XUserIdentityServiceError?) {
         if let userIdentityCompletion = userIdentityCompletion {
             self.userIdentityCompletion = nil
             userIdentityCompletion(user, error)

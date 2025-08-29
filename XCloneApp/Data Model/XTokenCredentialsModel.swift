@@ -15,7 +15,7 @@ import Foundation
  * object's API where you can securely persist these credentials and manage
  * an "active" session.
  */
-public struct XTokenCredentials: Decodable {
+public struct XTokenCredentialsModel: Decodable {
     public let accessToken: String
     public let refreshToken: String
     public let expiresIn: TimeInterval

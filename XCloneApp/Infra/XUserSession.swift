@@ -10,7 +10,7 @@ import Security
 
 public struct XUserSessionContext {
     public let accessToken: String
-    public let user: XUser
+    public let user: XUserModel
 }
 
 public typealias XSetCurrentSessionCompletionHandler = ((_ didSetSessionCredentials: Bool, _ error: XUserSessionError?) -> Void)
@@ -49,7 +49,7 @@ public class XUserSession {
 
     private var accessToken: String?
     private var sessionExpiry: TimeInterval?
-    private var currentUser: XUser?
+    private var currentUser: XUserModel?
     private let userSessionQueue = DispatchQueue(label: "com.xcloneapp.usersession.queue", qos: .userInitiated)
 
     private var setCurrentSessionCompletion: XSetCurrentSessionCompletionHandler?
@@ -81,7 +81,7 @@ public class XUserSession {
         return Date().timeIntervalSince1970 < sessionExpiry - XUserSessionConstants.sessionExpiryThreshold
     }
 
-    public func setCurrentSession(_ tokenCredentials: XTokenCredentials,
+    public func setCurrentSession(_ tokenCredentials: XTokenCredentialsModel,
                                   _ completion: @escaping XSetCurrentSessionCompletionHandler) {
         preconditionMainThread()
         if setCurrentSessionCompletion == nil {
