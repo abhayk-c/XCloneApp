@@ -20,7 +20,7 @@ private enum XAuthenticationState {
     case none
     case authorizingUser
     case fetchingTokenCredentials(_ authorizationCode: String, _ pkce: XPKCECodeChallenge)
-    case settingTokenCredentials(_ credentials: XTokenCredentials)
+    case settingTokenCredentials(_ credentials: XTokenCredentialsModel)
     case authenticationSuccess
     case authenticationFailed(_ error: XAuthenticationError)
     case authenticationCancelled
@@ -188,7 +188,7 @@ public class XAuthenticationManager: NSObject, ASWebAuthenticationPresentationCo
         }
     }
 
-    private func handleSettingTokenCredentials(_ tokenCredentials: XTokenCredentials) {
+    private func handleSettingTokenCredentials(_ tokenCredentials: XTokenCredentialsModel) {
         userSession.setCurrentSession(tokenCredentials) { [weak self] (didSetCredentials: Bool, error: XUserSessionError?) in
             if let strongSelf = self {
                 if didSetCredentials && error == nil {
