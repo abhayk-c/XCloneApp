@@ -86,11 +86,10 @@ public class XAuthenticationService {
             if let request = requestBuilder.buildRequest() {
                 let task = URLSession.shared.dataTask(with: request) { (data: Data?, _: URLResponse?, error: Error?) in
                     DispatchQueue.main.async { [weak self] in
-                        if let strongSelf = self {
-                            if let refreshTokenCompletion = strongSelf.refreshTokenCompletion {
-                                strongSelf.refreshTokenCompletion = nil
-                                strongSelf.handleAuthTokenEndpointResponse(data, error, refreshTokenCompletion)
-                            }
+                        guard let strongSelf = self else { return }
+                        if let refreshTokenCompletion = strongSelf.refreshTokenCompletion {
+                            strongSelf.refreshTokenCompletion = nil
+                            strongSelf.handleAuthTokenEndpointResponse(data, error, refreshTokenCompletion)
                         }
                     }
                 }
