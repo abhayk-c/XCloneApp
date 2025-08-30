@@ -14,7 +14,8 @@ public struct XUserSessionContext {
 }
 
 public typealias XSetCurrentSessionCompletionHandler = ((_ didSetSessionCredentials: Bool, _ error: XUserSessionError?) -> Void)
-public typealias XGetUserSessionContextCompletionHandler = ((_ sessionContext: XUserSessionContext?, _ error: XUserSessionError?) -> Void)
+public typealias XGetUserSessionContextCompletionHandler = ((_ sessionContext: XUserSessionContext?,
+                                                             _ error: XUserSessionError?) -> Void)
 
 public enum XUserSessionError: Error {
     case keychainError(_ status: OSStatus)
@@ -44,7 +45,7 @@ public class XUserSession {
         static let refreshTokenKeychainId = "x.refreshToken"
         static let authStatusDefaultsKey = "userAuthenticated"
         static let sessionExpiryDefaultsKey = "sessionExpiry"
-        static let sessionExpiryThreshold: TimeInterval = 6900
+        static let sessionExpiryThreshold: TimeInterval = 60
     }
 
     private var accessToken: String?
