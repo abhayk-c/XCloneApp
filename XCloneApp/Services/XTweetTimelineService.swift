@@ -7,10 +7,10 @@
 
 import Foundation
 
-public struct XTweetPageModel {}
-
 public enum XTweetTimelineServiceError: Error {
-    case authenticationError(error: XUserSessionError?)
+    case authenticationError(_ error: XUserSessionError?)
+    case httpError(_ error: Error?)
+    case jsonDecodeError(_ error: Error?)
 }
 
 public typealias XTweetTimelineServiceCompletionHandler = ((_ tweets: XTweetPageModel?,
@@ -49,7 +49,7 @@ public class XTweetTimelineService {
             userSession.getUserSessionContext { [weak self] (sessionContext, error) in
                 guard let strongSelf = self else { return }
                 guard let sessionContext = sessionContext, error == nil else {
-                    strongSelf.safelyCallTimelineServiceCompletion(nil, .authenticationError(error: error))
+                    strongSelf.safelyCallTimelineServiceCompletion(nil, .authenticationError(error))
                     return
                 }
                 var requestBuilder = XHTTPRequestBuilder()
@@ -58,15 +58,25 @@ public class XTweetTimelineService {
                 requestBuilder.url = strongSelf.buildTimelineURL(sessionContext.user.id, paginationToken)
                 if let request = requestBuilder.buildRequest() {
                     let task = URLSession.shared.dataTask(with: request) { (data: Data?, _: URLResponse?, error: Error?) in
-                        // TO DO: Deserialize the response here.
-                        do {
-                            let timelineModel = try JSONDecoder().decode(XTimelineResponseModel.self, from: data!)
-                            print("hello")
-                        } catch {
-                            print(error)
-                        }
-                        DispatchQueue.main.async { [weak self] in
-                            guard let strongSelf = self else { return }
+                        if let data = data, error == nil {
+                            do {
+                                let timelineModel = try JSONDecoder().decode(XTimelineResponseModel.self, from: data)
+                                let tweetPageModel = XTweetPageModel(timelineModel)
+                                DispatchQueue.main.async { [weak self] in
+                                    guard let strongSelf = self else { return }
+                                    strongSelf.safelyCallTimelineServiceCompletion(tweetPageModel, nil)
+                                }
+                            } catch {
+                                DispatchQueue.main.async { [weak self] in
+                                    guard let strongSelf = self else { return }
+                                    strongSelf.safelyCallTimelineServiceCompletion(nil, .jsonDecodeError(error))
+                                }
+                            }
+                        } else {
+                            DispatchQueue.main.async { [weak self] in
+                                guard let strongSelf = self else { return }
+                                strongSelf.safelyCallTimelineServiceCompletion(nil, .httpError(error))
+                            }
                         }
                     }
                     task.resume()

@@ -9,6 +9,7 @@ excluded:
   - DerivedData
 
 disabled_rules:
+  - identifier_name
   - line_length
   - cyclomatic_complexity
   - trailing_whitespace

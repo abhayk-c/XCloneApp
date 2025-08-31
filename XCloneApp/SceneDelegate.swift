@@ -57,7 +57,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
     }
 
     func loginViewControllerDidAuthenticateUser(_ userSession: XUserSession) {
-        // no op currently
+        
     }
 
     func loginViewControllerUserAuthenticationFailed(_ error: XAuthenticationError?) {

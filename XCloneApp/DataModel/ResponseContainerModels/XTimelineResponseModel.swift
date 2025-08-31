@@ -5,6 +5,11 @@
 //  Created by Abhay Curam on 8/29/25.
 //
 
+/**
+ * Decodable Struct's encapsulating Twitter's Timeline v2 API
+ * JSON response. These models get transformed into a cleaner data model
+ * and shouldn't be used directly.
+ */
 public struct XTimelineResponseModel: Decodable {
     public let data: [XDataFieldResponseModel]
     public let includes: XIncludesFieldResponseModel
