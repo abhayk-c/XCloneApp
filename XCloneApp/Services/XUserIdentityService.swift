@@ -22,7 +22,7 @@ private struct XUserIdentityServiceConstants {
 /**
  * XUserIdentityService is a service object that helps fetch the current User object (identity)
  * once a user has been authorized and we have an authentication session (access token).
- * The service exchanges returns the current logged in "User" from an access token.
+ * The service returns the current logged in "User" from an access token.
  * This object shouldn't have to be used directly, prefer using the XUserSession that
  * allows you to get the currently authenticated "User"
  *
