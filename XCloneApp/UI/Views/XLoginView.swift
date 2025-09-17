@@ -21,7 +21,7 @@ public protocol XLoginViewDelegate: AnyObject {
 }
 
 private struct XLoginViewConstants {
-    static let logoImageName = "x-logo"
+    static let logoImageName = "x-large-logo-icon"
     static let logoImageViewYScale = 0.05
     static let labelPaddingScale = 0.112
     static let subHeaderLabelYScale = 0.0925
@@ -53,8 +53,10 @@ public class XLoginView: UIView {
     private var loginViewModel: XLoginViewModel
 
     private lazy var xLogoImageView: UIImageView = {
-        let xLogoImage = UIImage(named: XLoginViewConstants.logoImageName)
-        return UIImageView(image: xLogoImage)
+        let logoImage = UIImage(named: XLoginViewConstants.logoImageName)
+        let logoImageView = UIImageView(image: logoImage)
+        logoImageView.tintColor = UIColor.white
+        return logoImageView
     }()
 
     private lazy var subHeaderLabel: UILabel = {
