@@ -14,6 +14,11 @@ public class XBoundedDeque<T: Any> {
     private let _capacity: Int
     private var data: [T] = []
     
+    
+    subscript(index: Int) -> T {
+        return data[index]
+    }
+    
     // MARK: Public Properties
     public var front: T? {
         return data.first
