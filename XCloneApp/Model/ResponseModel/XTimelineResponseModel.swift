@@ -11,9 +11,9 @@
  * and shouldn't be used directly.
  */
 public struct XTimelineResponseModel: Decodable {
-    public let data: [XDataFieldResponseModel]
-    public let includes: XIncludesFieldResponseModel
-    public let meta: XMetaFieldResponseModel
+    public let data: [XDataFieldResponseModel] // tweet field data
+    public let includes: XIncludesFieldResponseModel // user and media field data
+    public let meta: XMetaFieldResponseModel // pagination field data
 }
 
 public struct XMetaFieldResponseModel: Decodable {

@@ -9,8 +9,9 @@
  * Data model encapsulating a user tweet on X.
  * Encapsulates and contains all the information required to display a tweet.
  */
-public struct XTweetModel {
-    public let text: String
+public struct XTweetModel: Hashable {
+    public let id: String
+    public let tweetText: String
     public let createdTime: String
     public let author: XUserModel?
     public let attachments: [XMediaAttachmentModel]?
@@ -31,7 +32,8 @@ private struct XTweetModelFactory {
                     }
                 }
             }
-            let tweet = XTweetModel(text: dataFieldItem.text,
+            let tweet = XTweetModel(id: dataFieldItem.id,
+                                    tweetText: dataFieldItem.text,
                                     createdTime: dataFieldItem.createdTime,
                                     author: usersIDMap[dataFieldItem.authorId] ?? nil,
                                     attachments: !mediaAttachments.isEmpty ? mediaAttachments : nil)

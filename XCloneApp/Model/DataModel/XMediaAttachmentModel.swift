@@ -11,7 +11,7 @@ public enum XMediaType {
     case unknown
 }
 
-public struct XMediaAttachmentModel: Decodable {
+public struct XMediaAttachmentModel: Decodable, Hashable {
     public let id: String
     public let mediaType: XMediaType
     public let width: Int
