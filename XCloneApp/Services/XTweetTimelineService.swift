@@ -19,6 +19,7 @@ public typealias XTweetTimelineServiceCompletionHandler = ((_ tweets: XTweetPage
 public class XTweetTimelineService {
     
     private let userSession: XUserSession
+    private let maxPaginationResults: Int
     private var tweetTimelineServiceCompletion: XTweetTimelineServiceCompletionHandler?
     private struct XTweetTimelineServiceConstants {
         static let endpointUriPrefix = "https://api.x.com/2/users/"
@@ -29,16 +30,17 @@ public class XTweetTimelineService {
         static let tweetFieldsKey = "tweet.fields"
         static let userFieldsKey = "user.fields"
         static let mediaFieldsKey = "media.fields"
-        static let maxResults = "50"
         static let expansions = "author_id,attachments.media_keys"
         static let tweetFields = "author_id,attachments,created_at"
         static let userFields = "confirmed_email,profile_image_url"
         static let mediaFields = "height,width,url,preview_image_url"
     }
     
-    public init(_ userSession: XUserSession) {
+    public init(_ userSession: XUserSession,
+                _ maxPaginationResults: Int) {
         preconditionMainThread()
         self.userSession = userSession
+        self.maxPaginationResults = maxPaginationResults
     }
     
     public func fetchTweetTimeline(_ paginationToken: String? = nil,
@@ -98,7 +100,7 @@ public class XTweetTimelineService {
         var urlComponents = URLComponents(string: baseUri)
         var urlQueryItems: [URLQueryItem] = []
         urlQueryItems.append(URLQueryItem(name: XTweetTimelineServiceConstants.maxResultsKey,
-                                          value: XTweetTimelineServiceConstants.maxResults))
+                                          value: String(maxPaginationResults)))
         if let paginationToken = paginationToken {
             urlQueryItems.append(URLQueryItem(name: XTweetTimelineServiceConstants.paginationTokenKey,
                                               value: paginationToken))

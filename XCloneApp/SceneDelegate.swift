@@ -18,6 +18,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
         return XUserSession(authenticationService, userIdentityService, tokenStore)
     }()
     
+    private lazy var tweetTimelineService: XTweetTimelineService = {
+        return XTweetTimelineService(userSession, 100)
+    }()
+    
     private lazy var loginViewController: XLoginViewController = {
         return createLoginViewController()
     }()
@@ -82,7 +86,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
     }
     
     private func createFeedNavigationController() -> UINavigationController {
-        let feedViewController = UIViewController()
+        let feedViewController = XTimelineFeedViewController(userSession, tweetTimelineService)
         feedViewController.view.backgroundColor = UIColor.white
         let logoImageView = UIImageView(image: UIImage(named: XSceneDelegateConstants.logoImageName))
         logoImageView.tintColor = UIColor.black

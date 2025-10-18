@@ -8,7 +8,7 @@
 /**
  * A data model struct that encapsulate a X "user."
  */
-public struct XUserModel: Decodable {
+public struct XUserModel: Decodable, Hashable {
     public let id: String
     public let name: String
     public let username: String

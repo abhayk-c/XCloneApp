@@ -14,7 +14,6 @@ public class XBoundedDeque<T: Any> {
     private let _capacity: Int
     private var data: [T] = []
     
-    
     subscript(index: Int) -> T {
         return data[index]
     }
@@ -51,32 +50,50 @@ public class XBoundedDeque<T: Any> {
     }
     
     // MARK: Public API
-    public func insertFront(_ element: T) {
+    public func insertFront(_ element: T) -> [T] {
+        var removedElements: [T] = []
         if data.count >= _capacity {
             let k = data.count - _capacity
-            for _ in 0...k { popBack() }
+            for _ in 0...k {
+                if let poppedElement = popBack() {
+                    removedElements.append(poppedElement)
+                }
+            }
         }
         data.insert(element, at: 0)
+        return removedElements
     }
     
-    public func insertBack(_ element: T) {
+    public func insertBack(_ element: T) -> [T] {
+        var removedElements: [T] = []
         if data.count >= _capacity {
             let k = data.count - _capacity
-            for _ in 0...k { popFront() }
+            for _ in 0...k {
+                if let poppedElement = popFront() {
+                    removedElements.append(poppedElement)
+                }
+            }
         }
         data.insert(element, at: data.count)
+        return removedElements
     }
     
-    public func popFront() {
+    public func popFront() -> T? {
         if !data.isEmpty {
-            data.removeFirst()
+            return data.removeFirst()
         }
+        return nil
     }
     
-    public func popBack() {
+    public func popBack() -> T? {
         if !data.isEmpty {
-            data.removeLast()
+            return data.removeLast()
         }
+        return nil
+    }
+    
+    public func removeAll() {
+        data.removeAll()
     }
     
 }

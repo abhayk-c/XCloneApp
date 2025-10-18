@@ -23,8 +23,11 @@ public struct XTweetPageModel {
         tweetCount = timelineResponseModel.meta.resultCount
         tweets = XTweetModelFactory.createTweets(timelineResponseModel)
     }
+}
+
+private struct XTweetModelFactory {
     
-    private func createTweetsModel(_ timelineResponseModel: XTimelineResponseModel) -> [XTweetModel] {
+    fileprivate static func createTweets(_ timelineResponseModel: XTimelineResponseModel) -> [XTweetModel] {
         var tweets = [XTweetModel]()
         let mediaIDMap = timelineResponseModel.includes.mediaMap
         let usersIDMap = timelineResponseModel.includes.usersMap
@@ -37,7 +40,8 @@ public struct XTweetPageModel {
                     }
                 }
             }
-            let tweet = XTweetModel(text: dataFieldItem.text,
+            let tweet = XTweetModel(id: dataFieldItem.id,
+                                    tweetText: dataFieldItem.text,
                                     createdTime: dataFieldItem.createdTime,
                                     author: usersIDMap[dataFieldItem.authorId] ?? nil,
                                     attachments: !mediaAttachments.isEmpty ? mediaAttachments : nil)
