@@ -86,7 +86,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
     }
     
     private func createFeedNavigationController() -> UINavigationController {
-        let feedViewController = XTimelineFeedViewController(userSession, tweetTimelineService)
+        let feedViewController = XTweetTimelineFeedViewController(userSession, tweetTimelineService)
         feedViewController.view.backgroundColor = UIColor.white
         let logoImageView = UIImageView(image: UIImage(named: XSceneDelegateConstants.logoImageName))
         logoImageView.tintColor = UIColor.black
