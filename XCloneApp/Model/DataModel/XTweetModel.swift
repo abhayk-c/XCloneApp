@@ -16,30 +16,3 @@ public struct XTweetModel: Hashable {
     public let author: XUserModel?
     public let attachments: [XMediaAttachmentModel]?
 }
-
-private struct XTweetModelFactory {
-    
-    static func createTweets(_ timelineResponseModel: XTimelineResponseModel) -> [XTweetModel] {
-        var tweets = [XTweetModel]()
-        let mediaIDMap = timelineResponseModel.includes.mediaMap
-        let usersIDMap = timelineResponseModel.includes.usersMap
-        for dataFieldItem in timelineResponseModel.data {
-            var mediaAttachments = [XMediaAttachmentModel]()
-            if let mediaIDs = dataFieldItem.attachmentIds {
-                for mediaID in mediaIDs {
-                    if let mediaAttachment = mediaIDMap[mediaID] {
-                        mediaAttachments.append(mediaAttachment)
-                    }
-                }
-            }
-            let tweet = XTweetModel(id: dataFieldItem.id,
-                                    tweetText: dataFieldItem.text,
-                                    createdTime: dataFieldItem.createdTime,
-                                    author: usersIDMap[dataFieldItem.authorId] ?? nil,
-                                    attachments: !mediaAttachments.isEmpty ? mediaAttachments : nil)
-            tweets.append(tweet)
-        }
-        return tweets
-    }
-    
-}

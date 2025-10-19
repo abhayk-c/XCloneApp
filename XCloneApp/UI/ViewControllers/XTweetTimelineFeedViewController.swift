@@ -8,10 +8,10 @@
 import UIKit
 import Foundation
 
-private typealias XTimelineFeedTableViewDiffableDataSource = UITableViewDiffableDataSource<XTimelineFeedTableViewSection, XTweetModel>
-private typealias XTimelineFeedTableViewDataSourceSnapshot = NSDiffableDataSourceSnapshot<XTimelineFeedTableViewSection, XTweetModel>
+private typealias XTweetTimelineFeedTableViewDiffableDataSource = UITableViewDiffableDataSource<XTweetTimelineFeedTableViewSection, XTweetModel>
+private typealias XTweetTimelineFeedTableViewDataSourceSnapshot = NSDiffableDataSourceSnapshot<XTweetTimelineFeedTableViewSection, XTweetModel>
 
-private enum XTimelineFeedTableViewSection {
+private enum XTweetTimelineFeedTableViewSection {
     case main
 }
 
@@ -21,7 +21,7 @@ private enum XTimelineFeedTableViewSection {
  * a collection of Tweets in a sliding window data structure for it's backing data model.
  * It coordinates with the TweetTimelineService to load new tweets (hits Twitters pagination endpoint).
  */
-public class XTimelineFeedViewController: UIViewController, UITableViewDelegate {
+public class XTweetTimelineFeedViewController: UIViewController, UITableViewDelegate {
     
     private let userSession: XUserSession
     private let tweetTimelineService: XTweetTimelineService
@@ -33,7 +33,7 @@ public class XTimelineFeedViewController: UIViewController, UITableViewDelegate 
     private lazy var tableViewDataSource = makeDiffableTableViewDataSource()
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
-        let cellReuseID = XTimelineFeedViewControllerConstants.cellReuseIdentifier
+        let cellReuseID = XTweetTimelineFeedViewControllerConstants.cellReuseIdentifier
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellReuseID)
         tableView.backgroundColor = UIColor.white
         tableView.allowsSelection = false
@@ -42,7 +42,7 @@ public class XTimelineFeedViewController: UIViewController, UITableViewDelegate 
         return tableView
     }()
     
-    private struct XTimelineFeedViewControllerConstants {
+    private struct XTweetTimelineFeedViewControllerConstants {
         static let cellReuseIdentifier = "test_cell"
         static let tweetTimelineCapacity = 4
         static let debounceDelay: TimeInterval = 0.75
@@ -53,9 +53,9 @@ public class XTimelineFeedViewController: UIViewController, UITableViewDelegate 
                 _ tweetTimelineService: XTweetTimelineService) {
         self.userSession = userSession
         self.tweetTimelineService = tweetTimelineService
-        let capacity = XTimelineFeedViewControllerConstants.tweetTimelineCapacity
+        let capacity = XTweetTimelineFeedViewControllerConstants.tweetTimelineCapacity
         self.tweetTimelineDeque = XBoundedDeque<XTweetPageModel>(capacity)
-        let delay = XTimelineFeedViewControllerConstants.debounceDelay
+        let delay = XTweetTimelineFeedViewControllerConstants.debounceDelay
         self.debouncer = XDebouncer(delay)
         super.init(nibName: nil, bundle: nil)
     }
@@ -110,15 +110,15 @@ public class XTimelineFeedViewController: UIViewController, UITableViewDelegate 
     }
     
     // MARK: Private Helpers
-    private func makeDiffableDataSourceSnapshot() -> XTimelineFeedTableViewDataSourceSnapshot {
-        var snapshot = XTimelineFeedTableViewDataSourceSnapshot()
+    private func makeDiffableDataSourceSnapshot() -> XTweetTimelineFeedTableViewDataSourceSnapshot {
+        var snapshot = XTweetTimelineFeedTableViewDataSourceSnapshot()
         snapshot.appendSections([.main])
         return snapshot
     }
     
-    private func makeDiffableTableViewDataSource() -> XTimelineFeedTableViewDiffableDataSource {
-        let dataSource = XTimelineFeedTableViewDiffableDataSource(tableView: tableView) { tableView, indexPath, tweetModel in
-            let cellReuseID = XTimelineFeedViewControllerConstants.cellReuseIdentifier
+    private func makeDiffableTableViewDataSource() -> XTweetTimelineFeedTableViewDiffableDataSource {
+        let dataSource = XTweetTimelineFeedTableViewDiffableDataSource(tableView: tableView) { tableView, indexPath, tweetModel in
+            let cellReuseID = XTweetTimelineFeedViewControllerConstants.cellReuseIdentifier
             let tableViewCell = tableView.dequeueReusableCell(withIdentifier: cellReuseID, for: indexPath)
             tableViewCell.textLabel?.numberOfLines = 3
             tableViewCell.textLabel?.text = tweetModel.tweetText
