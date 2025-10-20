@@ -106,6 +106,7 @@ public class XLoginView: UIView {
     }
 
     public override func layoutSubviews() {
+        super.layoutSubviews()
         if let xLogoImage = xLogoImageView.image {
             let xLogoImageViewY = XLoginViewConstants.logoImageViewYScale * bounds.height
             let xLogoImageViewX = (bounds.width / 2) - (xLogoImage.size.width / 2)
