@@ -34,7 +34,7 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
         let cellReuseID = XTweetTimelineFeedViewControllerConstants.cellReuseIdentifier
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: cellReuseID)
+        tableView.register(XTweetTimelineTableViewCell.self, forCellReuseIdentifier: cellReuseID)
         tableView.backgroundColor = UIColor.white
         tableView.allowsSelection = false
         tableView.showsVerticalScrollIndicator = true
@@ -43,7 +43,7 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     }()
     
     private struct XTweetTimelineFeedViewControllerConstants {
-        static let cellReuseIdentifier = "test_cell"
+        static let cellReuseIdentifier = "x_tweet_timeline_feed_cell"
         static let tweetTimelineCapacity = 4
         static let debounceDelay: TimeInterval = 0.75
     }
@@ -69,6 +69,7 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
         super.viewDidLoad()
         tableView.delegate = self
         tableView.dataSource = tableViewDataSource
+        tableView.rowHeight = getTableViewRowHeight()
         view.addSubview(tableView)
     }
     
@@ -78,6 +79,7 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     }
     
     public override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         // If our timeline is empty let's kick off a fetch.
         // Eventually we can write some logic to kick off a
         // fetch every ten minutes or so.
@@ -119,10 +121,15 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     private func makeDiffableTableViewDataSource() -> XTweetTimelineFeedTableViewDiffableDataSource {
         let dataSource = XTweetTimelineFeedTableViewDiffableDataSource(tableView: tableView) { tableView, indexPath, tweetModel in
             let cellReuseID = XTweetTimelineFeedViewControllerConstants.cellReuseIdentifier
-            let tableViewCell = tableView.dequeueReusableCell(withIdentifier: cellReuseID, for: indexPath)
-            tableViewCell.textLabel?.numberOfLines = 3
-            tableViewCell.textLabel?.text = tweetModel.tweetText
-            return tableViewCell
+            let cellContentViewModel = XTweetContentContainerViewModelFactory.createViewModel(tweetModel)
+            if let dequeuedCell = tableView.dequeueReusableCell(withIdentifier: cellReuseID, for: indexPath) as? XTweetTimelineTableViewCell {
+                dequeuedCell.viewModel = cellContentViewModel
+                return dequeuedCell
+            } else {
+                let tableViewCell = XTweetTimelineTableViewCell(style: .default, reuseIdentifier: cellReuseID)
+                tableViewCell.viewModel = cellContentViewModel
+                return tableViewCell
+            }
         }
         return dataSource
     }
@@ -192,6 +199,12 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
                 strongSelf.isFetchingTimeline = false
             }
         }
+    }
+    
+    private func getTableViewRowHeight() -> CGFloat {
+        let sizingCell = XTweetTimelineTableViewCell()
+        let cellHeight = sizingCell.sizeThatFits(CGSize.zero).height
+        return cellHeight
     }
     
 }

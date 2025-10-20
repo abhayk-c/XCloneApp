@@ -26,6 +26,7 @@ public class XSafeAreaInsetContainerView: UIView {
     }
 
     public override func layoutSubviews() {
+        super.layoutSubviews()
         let adjustedWidth = bounds.width - safeAreaInsets.left - safeAreaInsets.right
         let adjustedHeight = bounds.height - safeAreaInsets.top - safeAreaInsets.bottom
         childView.frame = CGRect(x: safeAreaInsets.left, y: safeAreaInsets.top, width: adjustedWidth, height: adjustedHeight)
