@@ -55,12 +55,12 @@ public class XTweetHeaderView: UIView {
     }
     
     public override func sizeThatFits(_ size: CGSize) -> CGSize {
-        super.layoutSubviews()
         let stackedLabelsHeight = userNameLabelFont.lineHeight + dateLabelFont.lineHeight + interLabelSpacing
         return CGSize(width: size.width, height: stackedLabelsHeight)
     }
     
     public override func layoutSubviews() {
+        super.layoutSubviews()
         userNameLabel.frame = CGRect(x: 0, y: 0, width: bounds.width, height: userNameLabelFont.lineHeight)
         let dateLabelOriginY = userNameLabelFont.lineHeight + interLabelSpacing
         dateLabel.frame = CGRect(x: 0, y: dateLabelOriginY, width: bounds.width, height: dateLabelFont.lineHeight)
