@@ -25,6 +25,7 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     
     private let userSession: XUserSession
     private let tweetTimelineService: XTweetTimelineService
+    private let imageDownloader: ImageDownloadRequestManager
     private let tweetTimelineDeque: XBoundedDeque<XTweetPageModel>
     
     private let debouncer: XDebouncer
@@ -50,9 +51,11 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     
     // MARK: Public Init
     public init(_ userSession: XUserSession,
-                _ tweetTimelineService: XTweetTimelineService) {
+                _ tweetTimelineService: XTweetTimelineService,
+                _ imageDownloader: ImageDownloadRequestManager) {
         self.userSession = userSession
         self.tweetTimelineService = tweetTimelineService
+        self.imageDownloader = imageDownloader
         let capacity = XTweetTimelineFeedViewControllerConstants.tweetTimelineCapacity
         self.tweetTimelineDeque = XBoundedDeque<XTweetPageModel>(capacity)
         let delay = XTweetTimelineFeedViewControllerConstants.debounceDelay
@@ -119,17 +122,19 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     }
     
     private func makeDiffableTableViewDataSource() -> XTweetTimelineFeedTableViewDiffableDataSource {
-        let dataSource = XTweetTimelineFeedTableViewDiffableDataSource(tableView: tableView) { tableView, indexPath, tweetModel in
-            let cellReuseID = XTweetTimelineFeedViewControllerConstants.cellReuseIdentifier
-            let cellContentViewModel = XTweetContentContainerViewModelFactory.createViewModel(tweetModel)
-            if let dequeuedCell = tableView.dequeueReusableCell(withIdentifier: cellReuseID, for: indexPath) as? XTweetTimelineTableViewCell {
-                dequeuedCell.viewModel = cellContentViewModel
-                return dequeuedCell
-            } else {
-                let tableViewCell = XTweetTimelineTableViewCell(style: .default, reuseIdentifier: cellReuseID)
-                tableViewCell.viewModel = cellContentViewModel
-                return tableViewCell
+        let dataSource = XTweetTimelineFeedTableViewDiffableDataSource(tableView: tableView) { [weak self] tableView, indexPath, tweetModel in
+            if let strongSelf = self {
+                let cellReuseID = XTweetTimelineFeedViewControllerConstants.cellReuseIdentifier
+                let cellContentViewModel = XTweetContentContainerViewModelFactory.createViewModel(tweetModel)
+                if let dequeuedCell = tableView.dequeueReusableCell(withIdentifier: cellReuseID, for: indexPath) as? XTweetTimelineTableViewCell {
+                    if dequeuedCell.imageDownloader == nil {
+                        dequeuedCell.imageDownloader = strongSelf.imageDownloader
+                    }
+                    dequeuedCell.viewModel = cellContentViewModel
+                    return dequeuedCell
+                }
             }
+            return nil
         }
         return dataSource
     }

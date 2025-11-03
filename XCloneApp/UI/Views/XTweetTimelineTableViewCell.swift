@@ -20,9 +20,16 @@ public class XTweetTimelineTableViewCell: UITableViewCell {
         }
     }
     
-    private let tweetContentContainerView = XTweetContentContainerView(frame: .zero)
+    public var imageDownloader: ImageDownloadRequestManager? {
+        didSet {
+            tweetContentContainerView.imageDownloader = imageDownloader
+        }
+    }
+    
+    private let tweetContentContainerView: XTweetContentContainerView
     
     public override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        tweetContentContainerView = XTweetContentContainerView(frame: .zero)
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         contentView.addSubview(tweetContentContainerView)
     }
