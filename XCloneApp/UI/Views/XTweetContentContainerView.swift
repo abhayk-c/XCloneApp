@@ -18,8 +18,32 @@ public class XTweetContentContainerView: UIView {
         didSet {
             tweetHeaderView.viewModel = viewModel?.headerViewModel
             tweetContentView.viewModel = viewModel?.contentViewModel
+            profileBadgeImageURI = viewModel?.headerViewModel.profileImageURI
         }
     }
+    
+    public var imageDownloader: ImageDownloadRequestManager?
+    
+    private var profileBadgeImageURI: String? {
+        didSet {
+            if let outstandingImageDownloadRequest = profileBadgeImageDownloadRequest {
+                imageDownloader?.cancelRequest(outstandingImageDownloadRequest)
+                profileBadgeImageDownloadRequest = nil
+            }
+            if let imageUri = profileBadgeImageURI {
+                let newImageDownloadRequest = ImageDownloadRequest(imageUri, { [weak self] image in
+                    if let strongSelf = self {
+                        strongSelf.profileBadgeImageView.image = image
+                        strongSelf.profileBadgeImageDownloadRequest = nil
+                    }
+                })
+                profileBadgeImageDownloadRequest = newImageDownloadRequest
+                imageDownloader?.addRequest(newImageDownloadRequest)
+            }
+        }
+    }
+    
+    private var profileBadgeImageDownloadRequest: ImageDownloadRequest?
     
     private let profileBadgeImageViewSize: CGFloat = 36
     private let tweetHeaderViewOriginY: CGFloat = 25

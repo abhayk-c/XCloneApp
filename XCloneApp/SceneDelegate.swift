@@ -13,6 +13,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
     private let authenticationService = XAuthenticationService()
     private let userIdentityService = XUserIdentityService()
     private let tokenStore = XSecureKeychainTokenStore()
+    private let imageDownloader = ImageDownloadRequestManager()
     
     private lazy var userSession: XUserSession = {
         return XUserSession(authenticationService, userIdentityService, tokenStore)
@@ -86,7 +87,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
     }
     
     private func createFeedNavigationController() -> UINavigationController {
-        let feedViewController = XTweetTimelineFeedViewController(userSession, tweetTimelineService)
+        let feedViewController = XTweetTimelineFeedViewController(userSession, tweetTimelineService, imageDownloader)
         feedViewController.view.backgroundColor = UIColor.white
         let logoImageView = UIImageView(image: UIImage(named: XSceneDelegateConstants.logoImageName))
         logoImageView.tintColor = UIColor.black

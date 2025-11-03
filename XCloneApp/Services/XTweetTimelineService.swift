@@ -16,11 +16,18 @@ public enum XTweetTimelineServiceError: Error {
 public typealias XTweetTimelineServiceCompletionHandler = ((_ tweets: XTweetPageModel?,
                                                             _ error: XTweetTimelineServiceError?) -> Void)
 
-public class XTweetTimelineService {
+public class XTweetTimelineService: NSObject, URLSessionTaskDelegate {
     
     private let userSession: XUserSession
     private let maxPaginationResults: Int
     private var tweetTimelineServiceCompletion: XTweetTimelineServiceCompletionHandler?
+    
+    private lazy var urlSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        let session = URLSession(configuration: config, delegate: self, delegateQueue: nil)
+        return session
+    }()
+    
     private struct XTweetTimelineServiceConstants {
         static let endpointUriPrefix = "https://api.x.com/2/users/"
         static let endpointUriSuffix = "/timelines/reverse_chronological"
@@ -59,7 +66,7 @@ public class XTweetTimelineService {
                 requestBuilder.httpHeaders = [XAuthorizationHTTPHeader(sessionContext.accessToken)]
                 requestBuilder.url = strongSelf.buildTimelineURL(sessionContext.user.id, paginationToken)
                 if let request = requestBuilder.buildRequest() {
-                    let task = URLSession.shared.dataTask(with: request) { (data: Data?, _: URLResponse?, error: Error?) in
+                    let task = strongSelf.urlSession.dataTask(with: request) { (data: Data?, _: URLResponse?, error: Error?) in
                         if let data = data, error == nil {
                             do {
                                 let timelineModel = try JSONDecoder().decode(XTimelineResponseModel.self, from: data)
