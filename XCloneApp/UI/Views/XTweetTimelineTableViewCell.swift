@@ -12,7 +12,7 @@ import UIKit
  * This is used in our XTweetTimelineFeedViewController to display a chronological paginated
  * timeline of a user's tweets. 
  */
-public class XTweetTimelineTableViewCell: UITableViewCell {
+public class XTweetTimelineTableViewCell: UITableViewCell, XTweetContentViewModelSizeThatFits {
     
     public var viewModel: XTweetContentContainerViewModel? {
         didSet {
@@ -43,8 +43,9 @@ public class XTweetTimelineTableViewCell: UITableViewCell {
         tweetContentContainerView.frame = CGRect(x: 0, y: 0, width: contentView.bounds.width, height: contentView.bounds.height)
     }
     
-    public override func sizeThatFits(_ size: CGSize) -> CGSize {
-        let contentContainerViewHeight = tweetContentContainerView.sizeThatFits(size).height
+    public func sizeThatFitsContentViewModel(_ tweetContentViewModel: XTweetContentViewModel,
+                                             _ size: CGSize) -> CGSize {
+        let contentContainerViewHeight = tweetContentContainerView.sizeThatFitsContentViewModel(tweetContentViewModel, size).height
         return CGSize(width: size.width, height: contentContainerViewHeight)
     }
     

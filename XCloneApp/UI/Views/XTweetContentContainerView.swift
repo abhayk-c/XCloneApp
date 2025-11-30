@@ -12,7 +12,7 @@ import UIKit
  * for rendering tweet data. XTweetContentContainerView display's and lays out
  * a tweet's header, its content (text and media), along with a profile badge.
  */
-public class XTweetContentContainerView: UIView {
+public class XTweetContentContainerView: UIView, XTweetContentViewModelSizeThatFits {
     
     public var viewModel: XTweetContentContainerViewModel? {
         didSet {
@@ -22,7 +22,13 @@ public class XTweetContentContainerView: UIView {
         }
     }
     
-    public var imageDownloader: ImageDownloadRequestManager?
+    public var imageDownloader: ImageDownloadRequestManager? {
+        didSet {
+            tweetContentView.imageDownloader = imageDownloader
+        }
+    }
+    
+    private var profileBadgeImageDownloadRequest: ImageDownloadRequest?
     
     private var profileBadgeImageURI: String? {
         didSet {
@@ -43,12 +49,14 @@ public class XTweetContentContainerView: UIView {
         }
     }
     
-    private var profileBadgeImageDownloadRequest: ImageDownloadRequest?
-    
     private let profileBadgeImageViewSize: CGFloat = 36
-    private let tweetHeaderViewOriginY: CGFloat = 25
     private let contentContainerBottomPadding: CGFloat = 20
     private let tweetContentViewTopSpacing: CGFloat = 10
+    private let tweetHeaderLeftSpacing: CGFloat = 22
+    private let profileBadgeImageViewRightSpacing: CGFloat = 8
+    private let profileBadgeImageViewOriginX: CGFloat = 13
+    private let profileBadgeImageViewOriginY: CGFloat = 23
+    private let tweetHeaderViewOriginY: CGFloat = 25
     
     private lazy var profileBadgeImageView: UIImageView = {
         let fixedSize: CGFloat = profileBadgeImageViewSize
@@ -75,16 +83,12 @@ public class XTweetContentContainerView: UIView {
     
     public override func layoutSubviews() {
         super.layoutSubviews()
-        let profileBadgeImageViewOriginX: CGFloat = 13
-        let profileBadgeImageViewOriginY: CGFloat = 23
         profileBadgeImageView.frame = CGRect(x: profileBadgeImageViewOriginX,
                                              y: profileBadgeImageViewOriginY,
                                              width: profileBadgeImageViewSize,
                                              height: profileBadgeImageViewSize)
         
-        let profileBadgeRightSpacing: CGFloat = 8
-        let tweetHeaderLeftSpacing: CGFloat = 22
-        let tweetHeaderViewOriginX = profileBadgeImageViewOriginX + profileBadgeImageViewSize + profileBadgeRightSpacing
+        let tweetHeaderViewOriginX = getTweetHeaderViewOriginX()
         let tweetHeaderViewHeight = tweetHeaderView.sizeThatFits(bounds.size).height
         let tweetHeaderViewWidth = bounds.width - tweetHeaderViewOriginX - tweetHeaderLeftSpacing
         tweetHeaderView.frame = CGRect(x: tweetHeaderViewOriginX,
@@ -94,7 +98,7 @@ public class XTweetContentContainerView: UIView {
         
         let tweetContentViewOriginX = tweetHeaderViewOriginX
         let tweetContentViewOriginY = tweetHeaderViewOriginY + tweetHeaderViewHeight + tweetContentViewTopSpacing
-        let tweetContentViewHeight = tweetContentView.sizeThatFits(bounds.size).height
+        let tweetContentViewHeight = bounds.size.height - tweetContentViewOriginY - contentContainerBottomPadding
         let tweetContentViewWidth = tweetHeaderViewWidth
         tweetContentView.frame = CGRect(x: tweetContentViewOriginX,
                                         y: tweetContentViewOriginY,
@@ -102,11 +106,20 @@ public class XTweetContentContainerView: UIView {
                                         height: tweetContentViewHeight)
     }
     
-    public override func sizeThatFits(_ size: CGSize) -> CGSize {
+    public func sizeThatFitsContentViewModel(_ tweetContentViewModel: XTweetContentViewModel,
+                                             _ size: CGSize) -> CGSize {
         let headerViewHeight = tweetHeaderView.sizeThatFits(size).height
-        let tweetContentViewHeight = tweetContentView.sizeThatFits(size).height
+        let tweetHeaderViewWidth = size.width - getTweetHeaderViewOriginX() - tweetHeaderLeftSpacing
+        let tweetContentViewWidth = tweetHeaderViewWidth
+        let tweetContentViewSize = CGSize(width: tweetContentViewWidth, height: size.height)
+        let tweetContentViewHeight = tweetContentView.sizeThatFitsContentViewModel(tweetContentViewModel,
+                                                                                   tweetContentViewSize).height
         let contentContainerHeight = tweetHeaderViewOriginY + headerViewHeight + tweetContentViewTopSpacing + tweetContentViewHeight + contentContainerBottomPadding
         return CGSize(width: size.width, height: contentContainerHeight)
+    }
+    
+    private func getTweetHeaderViewOriginX() -> CGFloat {
+        return profileBadgeImageViewOriginX + profileBadgeImageViewSize + profileBadgeImageViewRightSpacing
     }
     
 }
