@@ -17,7 +17,7 @@ public class ImageDownloadRequest: Hashable {
         self.requestHandler = handler
     }
     
-    public static func ==(lhs: ImageDownloadRequest, rhs: ImageDownloadRequest) -> Bool {
+    public static func == (lhs: ImageDownloadRequest, rhs: ImageDownloadRequest) -> Bool {
         return lhs === rhs
     }
     

@@ -35,7 +35,7 @@ public class XTweetContentView: UIView, XTweetContentViewModelSizeThatFits {
                 for mediaAttachment in mediaAttachments {
                     let mediaURI: String? = mediaAttachment.uri ?? mediaAttachment.previewImageUri
                     let mediaImageView = createTweetImageView(mediaAttachment.width, mediaAttachment.height)
-                    var mediaImageLoadContext = XTweetContentImageLoadContext(mediaImageView)
+                    let mediaImageLoadContext = XTweetContentImageLoadContext(mediaImageView)
                     if let imageURI = mediaURI {
                         mediaImageLoadContext.imageDownload = ImageDownloadRequest(imageURI) { image in
                             mediaImageLoadContext.displayImageView.image = image
@@ -70,6 +70,7 @@ public class XTweetContentView: UIView, XTweetContentViewModelSizeThatFits {
                 previousImageLoadContext.displayImageView.removeFromSuperview()
                 if let downloader = imageDownloader, let previousImageDownload = previousImageLoadContext.imageDownload {
                     downloader.cancelRequest(previousImageDownload)
+                    previousImageLoadContext.imageDownload = nil
                 }
             }
             for newImageLoadContext in tweetImageLoadContexts {
