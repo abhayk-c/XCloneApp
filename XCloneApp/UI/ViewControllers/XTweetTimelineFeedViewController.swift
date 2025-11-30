@@ -72,7 +72,6 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
         super.viewDidLoad()
         tableView.delegate = self
         tableView.dataSource = tableViewDataSource
-        tableView.rowHeight = getTableViewRowHeight()
         view.addSubview(tableView)
     }
     
@@ -89,6 +88,15 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
         if tweetTimelineDeque.isEmpty {
             fetchAndLoadInitialTimelineData()
         }
+    }
+    
+    public func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        guard let tweetModel = tableViewDataSource.itemIdentifier(for: indexPath) else { return 0 }
+        let sizingCell = XTweetTimelineTableViewCell()
+        let contentViewModel = XTweetContentViewModelFactory.createViewModel(tweetModel)
+        let idealSize = CGSize(width: tableView.bounds.width, height: CGFloat.greatestFiniteMagnitude)
+        let cellHeight = sizingCell.sizeThatFitsContentViewModel(contentViewModel, idealSize).height
+        return cellHeight
     }
     
     // MARK: UIScrollViewDelegate
@@ -204,12 +212,6 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
                 strongSelf.isFetchingTimeline = false
             }
         }
-    }
-    
-    private func getTableViewRowHeight() -> CGFloat {
-        let sizingCell = XTweetTimelineTableViewCell()
-        let cellHeight = sizingCell.sizeThatFits(CGSize.zero).height
-        return cellHeight
     }
     
 }
