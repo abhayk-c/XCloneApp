@@ -19,21 +19,50 @@ private struct XLoginViewControllerConstants {
     static let okActionAlertTitle = "OK"
 }
 
+public struct XLoginViewModel {
+    public let subHeaderText: String
+    public let loginButtonText: String
+}
+
 /**
- * XLoginViewController is the login vc for our XClone Application.
+ * XLoginViewController is the login VC for our XClone Application.
  * Use this VC to display our login UI to authenticate a user.
  */
-public class XLoginViewController: UIViewController, XLoginViewDelegate, XAuthenticationManagerDelegate {
+public class XLoginViewController: UIViewController, XLoginStackViewDelegate, XAuthenticationManagerDelegate {
 
     public weak var delegate: XLoginViewControllerDelegate?
     private let viewModel: XLoginViewModel
     private let userSession: XUserSession
     private let authenticationManager: XAuthenticationManager
-
-    private lazy var loginView: XLoginView = {
-        let loginView = XLoginView(frame: .zero, loginViewModel: viewModel, delegate: self)
+    
+    private lazy var loginStackView: XLoginStackView = {
+        let loginStackViewModel = XLoginStackViewModel(loginViewModel: viewModel, spacingConfig: XLoginStackViewSpacingConfig(.zero))
+        let loginView = XLoginStackView(frame: .zero, loginStackViewModel: loginStackViewModel, delegate: self)
+        loginView.translatesAutoresizingMaskIntoConstraints = false
         return loginView
     }()
+    
+    private lazy var loginSpinnerView: UIActivityIndicatorView = {
+        let spinnerView = UIActivityIndicatorView(style: .large)
+        spinnerView.color = UIColor.lightGray
+        spinnerView.hidesWhenStopped = true
+        spinnerView.translatesAutoresizingMaskIntoConstraints = false
+        return spinnerView
+    }()
+    
+    private var shouldDisplayLoginSpinner: Bool = false {
+        didSet {
+            if shouldDisplayLoginSpinner {
+                loginStackView.shouldEnableLoginButton = false
+                if loginSpinnerView.isHidden { loginSpinnerView.isHidden = false }
+                loginSpinnerView.startAnimating()
+            } else {
+                loginStackView.shouldEnableLoginButton = true
+                loginSpinnerView.stopAnimating()
+                if loginSpinnerView.isHidden { loginSpinnerView.isHidden = true }
+            }
+        }
+    }
 
     // MARK: Public Init
     public init(_ userSession: XUserSession,
@@ -51,15 +80,22 @@ public class XLoginViewController: UIViewController, XLoginViewDelegate, XAuthen
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
-    public override func loadView() {
-        let containerView = XSafeAreaInsetContainerView(frame: .zero, childView: loginView)
-        containerView.backgroundColor = UIColor.black
-        view = containerView
+    
+    public override func viewDidLoad() {
+        view.addSubview(loginStackView)
+        view.addSubview(loginSpinnerView)
+        setupConstraints()
     }
-
-    public func loginViewDidTapLoginButton(_ loginView: XLoginView) {
-        loginView.shouldDisplayLoginSpinner = true
+    
+    public override func viewWillLayoutSubviews() {
+        let spacingConfig = XLoginStackViewSpacingConfig(view.bounds.size)
+        let loginViewModel = XLoginStackViewModel(loginViewModel: viewModel,
+                                                  spacingConfig: spacingConfig)
+        loginStackView.loginStackViewModel = loginViewModel
+    }
+    
+    public func loginStackViewDidTapLoginButton(_ loginView: XLoginStackView) {
+        shouldDisplayLoginSpinner = true
         authenticationManager.authenticate()
     }
 
@@ -69,12 +105,12 @@ public class XLoginViewController: UIViewController, XLoginViewDelegate, XAuthen
     }
 
     public func authenticationDidSucceed(_ userSession: XUserSession) {
-        loginView.shouldDisplayLoginSpinner = false
+        shouldDisplayLoginSpinner = false
         self.delegate?.loginViewControllerDidAuthenticateUser(userSession)
     }
 
     public func authenticationFailedWithError(_ error: XAuthenticationError) {
-        loginView.shouldDisplayLoginSpinner = false
+        shouldDisplayLoginSpinner = false
         let alertController = UIAlertController(title: XLoginViewControllerConstants.authFailedAlertTitle, message: error.localizedDescription, preferredStyle: .alert)
         let OKAction = UIAlertAction(title: XLoginViewControllerConstants.okActionAlertTitle, style: .default) { (_) in
             alertController.dismiss(animated: true)
@@ -85,8 +121,19 @@ public class XLoginViewController: UIViewController, XLoginViewDelegate, XAuthen
     }
 
     public func authenticationCancelledByUser() {
-        loginView.shouldDisplayLoginSpinner = false
+        shouldDisplayLoginSpinner = false
         self.delegate?.loginViewControllerUserAuthenticationCancelled()
+    }
+    
+    // MARK: AutoLayout + Constraints
+    private func setupConstraints() {
+        NSLayoutConstraint.activate([
+            loginStackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            loginStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            loginStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            loginSpinnerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loginSpinnerView.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
     }
 
 }
