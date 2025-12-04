@@ -16,11 +16,13 @@ public struct XUserSessionContext {
 public typealias XSetCurrentSessionCompletionHandler = ((_ didSetSessionCredentials: Bool, _ error: XUserSessionError?) -> Void)
 public typealias XGetUserSessionContextCompletionHandler = ((_ sessionContext: XUserSessionContext?,
                                                              _ error: XUserSessionError?) -> Void)
+public typealias XInvalidateSessionCompletionHandler = ((_ didInvalidate: Bool, _ error: XUserSessionError?) -> Void)
 
 public enum XUserSessionError: Error {
     case keychainError(_ status: OSStatus)
     case refreshTokenFetchError(_ error: XAuthServiceError?)
     case getUserFetchError(_ error: XUserIdentityServiceError?)
+    case invalidateSessionError(_ error: XAuthServiceError?)
 }
 
 /**
@@ -55,6 +57,7 @@ public class XUserSession {
 
     private var setCurrentSessionCompletion: XSetCurrentSessionCompletionHandler?
     private var getUserSessionContextCompletion: XGetUserSessionContextCompletionHandler?
+    private var invalidateSessionCompletion: XInvalidateSessionCompletionHandler?
 
     private var authenticationService: XAuthenticationService
     private var userIdentityService: XUserIdentityService
@@ -152,6 +155,62 @@ public class XUserSession {
                     strongSelf.safelyCallGetUserSessionContextCompletion(sessionContext, error)
                 }
             }
+        }
+    }
+    
+    /**
+     * This API only revokes the access token which works in the interim but is technically not correct.
+     * We should revoke the refresh token which is actually much LONGER lived, that would be more correct
+     * from a security perspective. Ideally we should revoke both tokens. But as a v1 we revoke the access token.
+     */
+    public func invalidateSession(_ completion: @escaping XInvalidateSessionCompletionHandler) {
+        preconditionMainThread()
+        if invalidateSessionCompletion == nil {
+            invalidateSessionCompletion = completion
+            getAccessTokenAndRefreshSessionIfNeeded { [weak self] (accessToken, error) in
+                guard let strongSelf = self else { return }
+                if let accessToken = accessToken, error == nil {
+                    strongSelf.authenticationService.revokeTokenCredentials(accessToken, XAuthenticationConstants.clientID) { (didRevoke: Bool, error: XAuthServiceError?) in
+                        if didRevoke && error == nil {
+                            strongSelf.userSessionQueue.async { [weak self] in
+                                guard let strongSelf = self else { return }
+                                // remove access token from keychain
+                                let accessTokenRemoveStatus = strongSelf.keychainTokenStore.removeTokenFromKeychain(XUserSessionConstants.accessTokenKeychainId)
+                                if accessTokenRemoveStatus != errSecSuccess {
+                                    DispatchQueue.main.async { [weak self] in
+                                        guard let strongSelf = self else { return }
+                                        strongSelf.safelyCallInvalidateSessionCompletion(false, .keychainError(accessTokenRemoveStatus))
+                                    }
+                                    return
+                                }
+                                // remove refresh token from keychain
+                                let refreshTokenRemoveStatus = strongSelf.keychainTokenStore.removeTokenFromKeychain(XUserSessionConstants.refreshTokenKeychainId)
+                                if refreshTokenRemoveStatus != errSecSuccess {
+                                    DispatchQueue.main.async { [weak self] in
+                                        guard let strongSelf = self else { return }
+                                        strongSelf.safelyCallInvalidateSessionCompletion(false, .keychainError(refreshTokenRemoveStatus))
+                                    }
+                                    return
+                                }
+                                // clear user defaults
+                                UserDefaults.standard.removeObject(forKey: XUserSessionConstants.authStatusDefaultsKey)
+                                UserDefaults.standard.removeObject(forKey: XUserSessionConstants.sessionExpiryDefaultsKey)
+                                DispatchQueue.main.async { [weak self] in
+                                    guard let strongSelf = self else { return }
+                                    // reset and clear in-memory session state.
+                                    strongSelf.accessToken = nil
+                                    strongSelf.sessionExpiry = nil
+                                    strongSelf.currentUser = nil
+                                    strongSelf.safelyCallInvalidateSessionCompletion(true, nil)
+                                }
+                            }
+                        } else {
+                            strongSelf.safelyCallInvalidateSessionCompletion(false, .invalidateSessionError(error))
+                        }
+                    }
+                }
+            }
+            
         }
     }
 
@@ -273,6 +332,13 @@ public class XUserSession {
         if let completion = setCurrentSessionCompletion {
             self.setCurrentSessionCompletion = nil
             completion(didSetSessionCredentials, error)
+        }
+    }
+    
+    private func safelyCallInvalidateSessionCompletion(_ didInvalidate: Bool, _ error: XUserSessionError?) {
+        if let completion = invalidateSessionCompletion {
+            self.invalidateSessionCompletion = nil
+            completion(didInvalidate, error)
         }
     }
 
