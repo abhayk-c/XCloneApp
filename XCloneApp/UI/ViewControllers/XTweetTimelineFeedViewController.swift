@@ -34,7 +34,7 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     private lazy var tableViewDataSource = makeDiffableTableViewDataSource()
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
-        let cellReuseID = XTweetTimelineFeedViewControllerConstants.cellReuseIdentifier
+        let cellReuseID = Constants.cellReuseIdentifier
         tableView.register(XTweetTimelineTableViewCell.self, forCellReuseIdentifier: cellReuseID)
         tableView.backgroundColor = UIColor.white
         tableView.allowsSelection = false
@@ -43,10 +43,11 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
         return tableView
     }()
     
-    private struct XTweetTimelineFeedViewControllerConstants {
+    private struct Constants {
         static let cellReuseIdentifier = "x_tweet_timeline_feed_cell"
         static let tweetTimelineCapacity = 4
         static let debounceDelay: TimeInterval = 0.75
+        static let logoImageName = "x-small-logo-icon"
     }
     
     // MARK: Public Init
@@ -56,11 +57,11 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
         self.userSession = userSession
         self.tweetTimelineService = tweetTimelineService
         self.imageDownloader = imageDownloader
-        let capacity = XTweetTimelineFeedViewControllerConstants.tweetTimelineCapacity
-        self.tweetTimelineDeque = XBoundedDeque<XTweetPageModel>(capacity)
-        let delay = XTweetTimelineFeedViewControllerConstants.debounceDelay
-        self.debouncer = XDebouncer(delay)
+        let capacity = Constants.tweetTimelineCapacity
+        tweetTimelineDeque = XBoundedDeque<XTweetPageModel>(capacity)
+        debouncer = XDebouncer(Constants.debounceDelay)
         super.init(nibName: nil, bundle: nil)
+        configureNavigationItem()
     }
     
     required init?(coder: NSCoder) {
@@ -70,6 +71,7 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     // MARK: VC Layout and Lifecycle
     public override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = UIColor.white
         tableView.delegate = self
         tableView.dataSource = tableViewDataSource
         view.addSubview(tableView)
@@ -123,6 +125,13 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     }
     
     // MARK: Private Helpers
+    private func configureNavigationItem() {
+        let logoImageView = UIImageView(image: UIImage(named: Constants.logoImageName))
+        logoImageView.tintColor = UIColor.black
+        logoImageView.contentMode = .scaleAspectFit
+        navigationItem.titleView = logoImageView
+    }
+    
     private func makeDiffableDataSourceSnapshot() -> XTweetTimelineFeedTableViewDataSourceSnapshot {
         var snapshot = XTweetTimelineFeedTableViewDataSourceSnapshot()
         snapshot.appendSections([.main])
@@ -132,7 +141,7 @@ public class XTweetTimelineFeedViewController: UIViewController, UITableViewDele
     private func makeDiffableTableViewDataSource() -> XTweetTimelineFeedTableViewDiffableDataSource {
         let dataSource = XTweetTimelineFeedTableViewDiffableDataSource(tableView: tableView) { [weak self] tableView, indexPath, tweetModel in
             if let strongSelf = self {
-                let cellReuseID = XTweetTimelineFeedViewControllerConstants.cellReuseIdentifier
+                let cellReuseID = Constants.cellReuseIdentifier
                 let cellContentViewModel = XTweetContentContainerViewModelFactory.createViewModel(tweetModel)
                 if let dequeuedCell = tableView.dequeueReusableCell(withIdentifier: cellReuseID, for: indexPath) as? XTweetTimelineTableViewCell {
                     if dequeuedCell.imageDownloader == nil {
