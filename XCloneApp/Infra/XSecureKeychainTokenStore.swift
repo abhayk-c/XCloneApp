@@ -44,6 +44,14 @@ public struct XSecureKeychainTokenStore {
         }
         return readToken.status
     }
+    
+    public func removeTokenFromKeychain(_ tokenIdentifier: String) -> OSStatus {
+        let readToken = readTokenFromKeychain(tokenIdentifier)
+        if readToken.status == errSecSuccess {
+            return removeTokenInKeychain(tokenIdentifier)
+        }
+        return readToken.status
+    }
 
     // MARK: Private Helpers
     private func insertTokenInKeychain(_ token: String, _ tokenIdentifier: String) -> OSStatus {
@@ -64,6 +72,15 @@ public struct XSecureKeychainTokenStore {
             kSecAttrAccount: tokenIdentifier
         ] as CFDictionary
         return SecItemUpdate(query, attributes)
+    }
+    
+    private func removeTokenInKeychain(_ tokenIdentifier: String) -> OSStatus {
+        let query = [
+            kSecClass: kSecClassGenericPassword,
+            kSecAttrAccount: tokenIdentifier
+        ] as CFDictionary
+        let status = SecItemDelete(query)
+        return status
     }
 
 }

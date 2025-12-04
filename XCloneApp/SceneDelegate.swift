@@ -7,7 +7,7 @@
 
 import UIKit
 
-class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDelegate {
+class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDelegate, XSettingsViewControllerDelegate {
 
     var window: UIWindow?
     private let authenticationService = XAuthenticationService()
@@ -51,6 +51,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
 
     // MARK: XLoginViewControllerDelegate
     func loginViewControllerDidAuthenticateUser(_ userSession: XUserSession) {
+        tabBarController.selectedIndex = 0
         window?.rootViewController = tabBarController
     }
 
@@ -60,6 +61,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
 
     func loginViewControllerUserAuthenticationCancelled() {
         // no op
+    }
+    
+    // MARK: XSettingsViewControllerDelegate
+    func settingsViewControllerUserDidSignOut() {
+        window?.rootViewController = loginViewController
     }
     
     // MARK: Private Helpers
@@ -95,7 +101,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
     }
     
     private func createSettingsNavigationController() -> UINavigationController {
-        let settingsViewController = XSettingsViewController()
+        let settingsViewController = XSettingsViewController(userSession, self)
         return createTabBarEmbeddedNavigationController(settingsViewController,
                                                         UIImage(named: Constants.tabBarSettingsIconImageName),
                                                         UIImage(named: Constants.tabBarSettingsIconSelectedImageName))

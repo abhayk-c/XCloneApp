@@ -15,6 +15,7 @@ public enum XAuthServiceError: Error {
 
 public typealias XAuthServiceCompletionHandler = ((_ tokenCredentials: XTokenCredentialsModel?,
                                                    _ error: XAuthServiceError?) -> Void)
+public typealias XRevokeTokenCompletionHandler = ((_ didRevoke: Bool, _ error: XAuthServiceError?) -> Void)
 
 /**
  * XAuthenticationService helps authorize and authenticate a user with X's
@@ -31,6 +32,7 @@ public class XAuthenticationService {
 
     private var oauthCompletion: XAuthServiceCompletionHandler?
     private var refreshTokenCompletion: XAuthServiceCompletionHandler?
+    private var revokeTokenCompletion: XRevokeTokenCompletionHandler?
 
     // MARK: Public API
     public func fetchTokenCredentialsDuringOAuth(_ authorizationCode: String,
@@ -97,6 +99,34 @@ public class XAuthenticationService {
             }
         }
     }
+    
+    public func revokeTokenCredentials(_ accessToken: String,
+                                       _ clientID: String,
+                                       _ completion: @escaping XRevokeTokenCompletionHandler) {
+        preconditionMainThread()
+        if revokeTokenCompletion == nil {
+            revokeTokenCompletion = completion
+            var requestBuilder = XHTTPRequestBuilder()
+            requestBuilder.httpMethod = .post
+            requestBuilder.httpHeaders = [XContentTypeHTTPHeader()]
+            requestBuilder.url = URL(string: XAuthenticationConstants.revokeTokenEndpointURI)
+            requestBuilder.httpBody = [
+                XAuthenticationConstants.tokenKey: accessToken,
+                XAuthenticationConstants.clientIDKey: clientID,
+                XAuthenticationConstants.tokenTypeHintKey: XAuthenticationConstants.accessTokenKey
+            ]
+            if let request = requestBuilder.buildRequest() {
+                let task = URLSession.shared.dataTask(with: request) { [weak self] (data: Data?, response: URLResponse?, error: Error?) in
+                    guard let strongSelf = self else { return }
+                    if let revokeTokenCompletion = strongSelf.revokeTokenCompletion {
+                        strongSelf.revokeTokenCompletion = nil
+                        strongSelf.handleRevokeTokenEndpointResponse(data, error, revokeTokenCompletion)
+                    }
+                }
+                task.resume()
+            }
+        }
+    }
 
     // MARK: Private Helpers
     private func handleAuthTokenEndpointResponse(_ data: Data?,
@@ -114,6 +144,25 @@ public class XAuthenticationService {
                 }
             } else {
                 callbackCompletion?(nil, .emptyResponseError)
+            }
+        }
+    }
+    
+    private func handleRevokeTokenEndpointResponse(_ data: Data?,
+                                                   _ error: Error?,
+                                                   _ callbackCompletion: XRevokeTokenCompletionHandler?) {
+        if let error = error {
+            callbackCompletion?(false, .httpError(error: error))
+        } else {
+            if let data = data {
+                do {
+                    let credentials = try JSONDecoder().decode(XRevokedTokenCredentialsModel.self, from: data)
+                    callbackCompletion?(credentials.revoked, nil)
+                } catch {
+                    callbackCompletion?(false, .jsonDecodingError(error: error))
+                }
+            } else {
+                callbackCompletion?(false, .emptyResponseError)
             }
         }
     }
