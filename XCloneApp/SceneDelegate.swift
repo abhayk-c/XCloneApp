@@ -31,12 +31,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
         return createTabBarController()
     }()
     
-    private struct XSceneDelegateConstants {
+    private struct Constants {
         static let loginHeaderText = "See what's happening in the world right now."
         static let loginButtonText = "Log in"
-        static let logoImageName = "x-small-logo-icon"
-        static let tabBarIconImageName = "home-unselected-tab-bar-icon"
-        static let tabBarIconSelectedImageName = "home-selected-tab-bar-icon"
+        static let tabBarFeedIconImageName = "home-unselected-tab-bar-icon"
+        static let tabBarFeedIconSelectedImageName = "home-selected-tab-bar-icon"
+        static let tabBarSettingsIconImageName = "settings-selected-tab-bar-icon"
+        static let tabBarSettingsIconSelectedImageName = "settings-unselected-tab-bar-icon"
     }
     
     // MARK: SceneDelegate Life Cycle
@@ -63,15 +64,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
     
     // MARK: Private Helpers
     private func createLoginViewController() -> XLoginViewController {
-        let loginViewModel = XLoginViewModel(subHeaderText: XSceneDelegateConstants.loginHeaderText,
-                                             loginButtonText: XSceneDelegateConstants.loginButtonText)
+        let loginViewModel = XLoginViewModel(subHeaderText: Constants.loginHeaderText,
+                                             loginButtonText: Constants.loginButtonText)
         let loginViewController = XLoginViewController(userSession, self, authenticationService, loginViewModel)
         return loginViewController
     }
     
     private func createTabBarController() -> UITabBarController {
         let tabBarViewController = UITabBarController()
-        tabBarViewController.viewControllers = [createFeedNavigationController()]
+        tabBarViewController.viewControllers = [createFeedNavigationController(), createSettingsNavigationController()]
         tabBarViewController.selectedIndex = 0
         let tabBarItemAppearance = UITabBarItemAppearance()
         tabBarItemAppearance.normal.iconColor = UIColor.black
@@ -88,14 +89,24 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate, XLoginViewControllerDel
     
     private func createFeedNavigationController() -> UINavigationController {
         let feedViewController = XTweetTimelineFeedViewController(userSession, tweetTimelineService, imageDownloader)
-        feedViewController.view.backgroundColor = UIColor.white
-        let logoImageView = UIImageView(image: UIImage(named: XSceneDelegateConstants.logoImageName))
-        logoImageView.tintColor = UIColor.black
-        logoImageView.contentMode = .scaleAspectFit
-        feedViewController.navigationItem.titleView = logoImageView
-        let navigationController = UINavigationController(rootViewController: feedViewController)
-        navigationController.tabBarItem.image = UIImage(named: XSceneDelegateConstants.tabBarIconImageName)
-        navigationController.tabBarItem.selectedImage = UIImage(named: XSceneDelegateConstants.tabBarIconSelectedImageName)
+        return createTabBarEmbeddedNavigationController(feedViewController,
+                                                        UIImage(named: Constants.tabBarFeedIconImageName),
+                                                        UIImage(named: Constants.tabBarFeedIconSelectedImageName))
+    }
+    
+    private func createSettingsNavigationController() -> UINavigationController {
+        let settingsViewController = XSettingsViewController()
+        return createTabBarEmbeddedNavigationController(settingsViewController,
+                                                        UIImage(named: Constants.tabBarSettingsIconImageName),
+                                                        UIImage(named: Constants.tabBarSettingsIconSelectedImageName))
+    }
+    
+    private func createTabBarEmbeddedNavigationController(_ viewController: UIViewController,
+                                                          _ tabBarUnselectedImage: UIImage?,
+                                                          _ tabBarSelectedImage: UIImage?) -> UINavigationController {
+        let navigationController = UINavigationController(rootViewController: viewController)
+        navigationController.tabBarItem.image = tabBarUnselectedImage
+        navigationController.tabBarItem.selectedImage = tabBarSelectedImage
         let navigationBarAppearance = UINavigationBarAppearance()
         navigationBarAppearance.configureWithOpaqueBackground()
         navigationController.navigationBar.scrollEdgeAppearance = navigationBarAppearance
